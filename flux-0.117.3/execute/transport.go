@@ -3,6 +3,8 @@ package execute
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -228,6 +230,17 @@ PROCESS:
 		if t.tryTransition(idle, running) {
 			goto PROCESS
 		} // else we have already been scheduled again, we can return
+	}
+}
+
+func pipeProcess(ctx context.Context, t Transformation, m Message) {
+
+	log.Println("start pipeProcess: ", m)
+
+	if f, err := processMessage(ctx, t, m); err != nil || f {
+		// error handler
+		log.Println("pipeProcess error")
+		os.Exit(0)
 	}
 }
 

@@ -2,8 +2,6 @@ package universe
 
 import (
 	"context"
-	"math"
-
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
 	"github.com/influxdata/flux/execute"
@@ -12,6 +10,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/values"
+	"math"
 )
 
 const WindowKind = "window"
@@ -332,7 +331,72 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 	}
 
 	return tbl.Do(func(cr flux.ColReader) error {
+
 		l := cr.Len()
+		//if l == 0 {
+		//	return nil
+		//}
+		//
+		//valueInterval := values.Time((cr.Times(1).Value(0) - cr.Times(0).Value(0)) / int64(l - 1))
+		//var leftBound values.Time = 0
+		//var rightBound values.Time =  values.Time(t.w.Every().Nanoseconds())
+		//leftIndex := 0
+		//rightIndex := 0
+		//
+		//tempLeft := leftBound
+		//
+		//for tempLeft <= values.Time(cr.Times(2).Value(cr.Len() - 1)) && tempLeft < t.bounds.Stop() {
+		//
+		//	if rightBound.Add(t.w.Every()) < t.bounds.Stop() {
+		//		rightBound = rightBound.Add(t.w.Every())
+		//		rightIndex = int(values.Time(rightBound.Sub(t.bounds.Start()).Nanoseconds()) / valueInterval)
+		//	} else {
+		//		rightBound = t.bounds.Stop()
+		//		rightIndex = l - 1
+		//	}
+		//
+		//	if rightBound.Sub(t.bounds.Start()).Duration() < t.w.Period().Duration() {
+		//		leftBound = t.bounds.Start()
+		//		leftIndex = 0
+		//	} else {
+		//		leftBound = tempLeft
+		//		leftIndex = int(values.Time(leftBound.Sub(t.bounds.Start()).Nanoseconds()) / valueInterval)
+		//	}
+		//
+		//	tempLeft = tempLeft.Add(t.w.Every())
+		//
+		//	newBound := interval.NewBounds(leftBound, rightBound)
+		//	key := t.newWindowGroupKey(tbl, keyCols, newBound, keyColMap)
+		//	builder, created := t.cache.TableBuilder(key)
+		//	if created {
+		//		for _, c := range newCols {
+		//			_, err := builder.AddCol(c)
+		//			if err != nil {
+		//				return err
+		//			}
+		//		}
+		//	}
+		//
+		//	for j, c := range builder.Cols() {
+		//		switch c.Label {
+		//		case t.startCol:
+		//			builder.MyAppendTime(leftIndex, rightIndex)
+		//			//if err := builder.AppendTime(startColIdx, newBound.Start()); err != nil {
+		//			//	return err
+		//			//}
+		//		case t.stopCol:
+		//			if err := builder.AppendTime(stopColIdx, newBound.Stop()); err != nil {
+		//				return err
+		//			}
+		//		default:
+		//			if err := builder.AppendValue(j, execute.ValueForRow(cr, i, j)); err != nil {
+		//				return err
+		//			}
+		//		}
+		//	}
+		//
+		//}
+
 		for i := 0; i < l; i++ {
 			tm := values.Time(cr.Times(timeIdx).Value(i))
 			bounds := t.getWindowBounds(tm)
