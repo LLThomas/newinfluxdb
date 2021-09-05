@@ -69,7 +69,7 @@ type executionState struct {
 	dispatcher *poolDispatcher
 	logger     *zap.Logger
 
-	worker map[string]*pipeWorker
+	consecutiveTransportSet []*consecutiveTransport
 }
 
 func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocator) (map[string]flux.Result, <-chan metadata.Metadata, error) {
@@ -78,9 +78,9 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 		return nil, nil, errors.Wrap(err, codes.Inherit, "failed to initialize execute state")
 	}
 
-	// start pipe worker
-	for _, e := range es.worker {
-		e.Start(nil)
+	// start transformer operator pipe worker
+	for _, e := range es.consecutiveTransportSet {
+		e.startPipeWorker()
 	}
 
 	es.do()
@@ -244,8 +244,7 @@ func (v *createExecutionNodeVisitor) Visit(node plan.Node) error {
 			v.es.transports = append(v.es.transports, transport)
 			executionNode.AddTransformation(transport)
 
-			// init executeState pipeWorker
-			v.es.worker[transport.t.Label()] = newPipeWorker(transport)
+			v.es.consecutiveTransportSet = append(v.es.consecutiveTransportSet, transport)
 
 		}
 

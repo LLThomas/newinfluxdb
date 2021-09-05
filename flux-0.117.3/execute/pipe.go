@@ -9,16 +9,16 @@ type pipeWorker struct {
 
 	message	chan Message
 
-	ct *consecutiveTransport
+	t Transformation
 
 	ctx context.Context
 }
 
-func newPipeWorker(t *consecutiveTransport) *pipeWorker {
+func newPipeWorker(t Transformation) *pipeWorker {
 	return &pipeWorker{
 		// size of buffered channel is 10 temporarily
 		message: make(chan Message, 10),
-		ct: t,
+		t: t,
 	}
 }
 
@@ -37,7 +37,7 @@ func (p *pipeWorker) run(ctx context.Context)  {
 		// add done channel
 
 		case msg := <- p.message:
-			pipeProcess(ctx, p.ct.t, msg)
+			pipeProcess(ctx, p.t, msg)
 			// send the result to next operator channel
 
 		}

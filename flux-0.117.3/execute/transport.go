@@ -42,6 +42,12 @@ type consecutiveTransport struct {
 
 	schedulerState int32
 	inflight       int32
+
+	worker *pipeWorker
+}
+
+func (t *consecutiveTransport) startPipeWorker() {
+	t.worker.Start(nil)
 }
 
 func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Transformation, n plan.Node, logger *zap.Logger) *consecutiveTransport {
@@ -54,6 +60,7 @@ func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Trans
 		messages: newMessageQueue(64),
 		stack:    n.CallStack(),
 		finished: make(chan struct{}),
+		worker: newPipeWorker(t),
 	}
 }
 
@@ -99,16 +106,77 @@ func (t *consecutiveTransport) Finished() <-chan struct{} {
 	return t.finished
 }
 
+//func (t *consecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) error {
+//	select {
+//	case <-t.finished:
+//		return t.err()
+//	default:
+//	}
+//	t.pushMsg(&retractTableMsg{
+//		srcMessage: srcMessage(id),
+//		key:        key,
+//	})
+//	return nil
+//}
+//
+//func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
+//	select {
+//	case <-t.finished:
+//		return t.err()
+//	default:
+//	}
+//	t.pushMsg(&processMsg{
+//		srcMessage: srcMessage(id),
+//		table:      newConsecutiveTransportTable(t, tbl),
+//	})
+//	return nil
+//}
+//
+//func (t *consecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
+//	select {
+//	case <-t.finished:
+//		return t.err()
+//	default:
+//	}
+//	t.pushMsg(&updateWatermarkMsg{
+//		srcMessage: srcMessage(id),
+//		time:       time,
+//	})
+//	return nil
+//}
+//
+//func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) error {
+//	select {
+//	case <-t.finished:
+//		return t.err()
+//	default:
+//	}
+//	t.pushMsg(&updateProcessingTimeMsg{
+//		srcMessage: srcMessage(id),
+//		time:       time,
+//	})
+//	return nil
+//}
+//
+//func (t *consecutiveTransport) Finish(id DatasetID, err error) {
+//	select {
+//	case <-t.finished:
+//		return
+//	default:
+//	}
+//	t.pushMsg(&finishMsg{
+//		srcMessage: srcMessage(id),
+//		err:        err,
+//	})
+//}
+
 func (t *consecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) error {
 	select {
 	case <-t.finished:
 		return t.err()
 	default:
 	}
-	t.pushMsg(&retractTableMsg{
-		srcMessage: srcMessage(id),
-		key:        key,
-	})
+	t.worker.message <- &retractTableMsg{srcMessage: srcMessage(id), key: key}
 	return nil
 }
 
@@ -118,10 +186,7 @@ func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 		return t.err()
 	default:
 	}
-	t.pushMsg(&processMsg{
-		srcMessage: srcMessage(id),
-		table:      newConsecutiveTransportTable(t, tbl),
-	})
+	t.worker.message <- &processMsg{srcMessage: srcMessage(id), table: newConsecutiveTransportTable(t, tbl)}
 	return nil
 }
 
@@ -131,10 +196,7 @@ func (t *consecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
 		return t.err()
 	default:
 	}
-	t.pushMsg(&updateWatermarkMsg{
-		srcMessage: srcMessage(id),
-		time:       time,
-	})
+	t.worker.message <- &updateWatermarkMsg{srcMessage: srcMessage(id), time: time}
 	return nil
 }
 
@@ -144,10 +206,7 @@ func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) err
 		return t.err()
 	default:
 	}
-	t.pushMsg(&updateProcessingTimeMsg{
-		srcMessage: srcMessage(id),
-		time:       time,
-	})
+	t.worker.message <- &updateProcessingTimeMsg{srcMessage: srcMessage(id), time: time}
 	return nil
 }
 
