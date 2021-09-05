@@ -4,6 +4,7 @@ package execute
 import (
 	"context"
 	"fmt"
+	"log"
 	"reflect"
 	"runtime/debug"
 	"sync"
@@ -79,8 +80,10 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 	}
 
 	// start transformer operator pipe worker
-	for _, e := range es.consecutiveTransportSet {
-		e.startPipeWorker()
+	log.Println("number of pipe workers: ", len(es.consecutiveTransportSet))
+	for i, e := range es.consecutiveTransportSet {
+		log.Println("start worker: ", i)
+		e.startPipeWorker(es.ctx)
 	}
 
 	es.do()
@@ -308,29 +311,29 @@ func (es *executionState) do() {
 		}(src)
 	}
 
-	wg.Add(1)
-	es.dispatcher.Start(es.resources.ConcurrencyQuota, es.ctx)
-	go func() {
-		defer wg.Done()
-
-		// Wait for all transports to finish
-		for _, t := range es.transports {
-			select {
-			case <-t.Finished():
-			case <-es.ctx.Done():
-				es.abort(es.ctx.Err())
-			case err := <-es.dispatcher.Err():
-				if err != nil {
-					es.abort(err)
-				}
-			}
-		}
-		// Check for any errors on the dispatcher
-		err := es.dispatcher.Stop()
-		if err != nil {
-			es.abort(err)
-		}
-	}()
+	//wg.Add(1)
+	//es.dispatcher.Start(es.resources.ConcurrencyQuota, es.ctx)
+	//go func() {
+	//	defer wg.Done()
+	//
+	//	// Wait for all transports to finish
+	//	for _, t := range es.transports {
+	//		select {
+	//		case <-t.Finished():
+	//		case <-es.ctx.Done():
+	//			es.abort(es.ctx.Err())
+	//		case err := <-es.dispatcher.Err():
+	//			if err != nil {
+	//				es.abort(err)
+	//			}
+	//		}
+	//	}
+	//	// Check for any errors on the dispatcher
+	//	err := es.dispatcher.Stop()
+	//	if err != nil {
+	//		es.abort(err)
+	//	}
+	//}()
 
 	go func() {
 		defer close(es.metaCh)

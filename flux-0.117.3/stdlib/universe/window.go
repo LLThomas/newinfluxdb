@@ -333,6 +333,11 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 	return tbl.Do(func(cr flux.ColReader) error {
 
 		l := cr.Len()
+
+		//log.Println("window: ")
+		//log.Println("left bound: ", time.Unix(0, cr.Times(2).Value(0)))
+		//log.Println("right bound:", time.Unix(0, cr.Times(2).Value(l-1)))
+
 		//if l == 0 {
 		//	return nil
 		//}

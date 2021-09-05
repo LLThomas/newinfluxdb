@@ -46,8 +46,8 @@ type consecutiveTransport struct {
 	worker *pipeWorker
 }
 
-func (t *consecutiveTransport) startPipeWorker() {
-	t.worker.Start(nil)
+func (t *consecutiveTransport) startPipeWorker(ctx context.Context) {
+	t.worker.Start(ctx)
 }
 
 func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Transformation, n plan.Node, logger *zap.Logger) *consecutiveTransport {
@@ -186,6 +186,9 @@ func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 		return t.err()
 	default:
 	}
+
+	log.Println("processMsg: ", t.Label(), tbl.Key().Values())
+
 	t.worker.message <- &processMsg{srcMessage: srcMessage(id), table: newConsecutiveTransportTable(t, tbl)}
 	return nil
 }
@@ -196,6 +199,9 @@ func (t *consecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
 		return t.err()
 	default:
 	}
+
+	log.Println("updateWatermarkMsg: ")
+
 	t.worker.message <- &updateWatermarkMsg{srcMessage: srcMessage(id), time: time}
 	return nil
 }
@@ -216,10 +222,10 @@ func (t *consecutiveTransport) Finish(id DatasetID, err error) {
 		return
 	default:
 	}
-	t.pushMsg(&finishMsg{
-		srcMessage: srcMessage(id),
-		err:        err,
-	})
+
+	log.Println("finishMsg: ")
+
+	t.worker.message <- &finishMsg{srcMessage: srcMessage(id), err: err}
 }
 
 func (t *consecutiveTransport) pushMsg(m Message) {
@@ -294,11 +300,11 @@ PROCESS:
 
 func pipeProcess(ctx context.Context, t Transformation, m Message) {
 
-	log.Println("start pipeProcess: ", m)
+	//log.Println("start pipeProcess: ", t.Label(), m.Type())
 
 	if f, err := processMessage(ctx, t, m); err != nil || f {
 		// error handler
-		log.Println("pipeProcess error")
+		log.Println("pipeProcess error: ", err)
 		os.Exit(0)
 	}
 }
