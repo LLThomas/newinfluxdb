@@ -68,6 +68,9 @@ func (t *aggregateTransformation) RetractTable(id DatasetID, key flux.GroupKey) 
 }
 
 func (t *aggregateTransformation) Process(id DatasetID, tbl flux.Table) error {
+
+	//log.Println("aggregateTransformation")
+
 	builder, created := t.cache.TableBuilder(tbl.Key())
 	if !created {
 		return errors.Newf(codes.FailedPrecondition, "aggregate found duplicate table with key: %v", tbl.Key())

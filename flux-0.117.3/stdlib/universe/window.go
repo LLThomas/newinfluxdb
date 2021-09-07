@@ -10,6 +10,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/values"
+	"log"
 	"math"
 )
 
@@ -332,92 +333,50 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 
 	return tbl.Do(func(cr flux.ColReader) error {
 
-		l := cr.Len()
-
 		//log.Println("window: ")
 		//log.Println("left bound: ", time.Unix(0, cr.Times(2).Value(0)))
 		//log.Println("right bound:", time.Unix(0, cr.Times(2).Value(l-1)))
 
-		//if l == 0 {
-		//	return nil
-		//}
-		//
-		//valueInterval := values.Time((cr.Times(1).Value(0) - cr.Times(0).Value(0)) / int64(l - 1))
-		//var leftBound values.Time = 0
-		//var rightBound values.Time =  values.Time(t.w.Every().Nanoseconds())
-		//leftIndex := 0
-		//rightIndex := 0
-		//
-		//tempLeft := leftBound
-		//
-		//for tempLeft <= values.Time(cr.Times(2).Value(cr.Len() - 1)) && tempLeft < t.bounds.Stop() {
-		//
-		//	if rightBound.Add(t.w.Every()) < t.bounds.Stop() {
-		//		rightBound = rightBound.Add(t.w.Every())
-		//		rightIndex = int(values.Time(rightBound.Sub(t.bounds.Start()).Nanoseconds()) / valueInterval)
-		//	} else {
-		//		rightBound = t.bounds.Stop()
-		//		rightIndex = l - 1
-		//	}
-		//
-		//	if rightBound.Sub(t.bounds.Start()).Duration() < t.w.Period().Duration() {
-		//		leftBound = t.bounds.Start()
-		//		leftIndex = 0
-		//	} else {
-		//		leftBound = tempLeft
-		//		leftIndex = int(values.Time(leftBound.Sub(t.bounds.Start()).Nanoseconds()) / valueInterval)
-		//	}
-		//
-		//	tempLeft = tempLeft.Add(t.w.Every())
-		//
-		//	newBound := interval.NewBounds(leftBound, rightBound)
-		//	key := t.newWindowGroupKey(tbl, keyCols, newBound, keyColMap)
-		//	builder, created := t.cache.TableBuilder(key)
-		//	if created {
-		//		for _, c := range newCols {
-		//			_, err := builder.AddCol(c)
-		//			if err != nil {
-		//				return err
-		//			}
-		//		}
-		//	}
-		//
-		//	for j, c := range builder.Cols() {
-		//		switch c.Label {
-		//		case t.startCol:
-		//			builder.MyAppendTime(leftIndex, rightIndex)
-		//			//if err := builder.AppendTime(startColIdx, newBound.Start()); err != nil {
-		//			//	return err
-		//			//}
-		//		case t.stopCol:
-		//			if err := builder.AppendTime(stopColIdx, newBound.Stop()); err != nil {
-		//				return err
-		//			}
-		//		default:
-		//			if err := builder.AppendValue(j, execute.ValueForRow(cr, i, j)); err != nil {
-		//				return err
-		//			}
-		//		}
-		//	}
-		//
-		//}
+		l := cr.Len()
 
-		for i := 0; i < l; i++ {
-			tm := values.Time(cr.Times(timeIdx).Value(i))
-			bounds := t.getWindowBounds(tm)
+		if l == 0 {
+			log.Println("l is 0!")
+			return nil
+		}
 
-			for _, bnds := range bounds {
-				key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
-				builder, created := t.cache.TableBuilder(key)
-				if created {
-					for _, c := range newCols {
-						_, err := builder.AddCol(c)
-						if err != nil {
-							return err
-						}
+		rightBound := values.Time(t.bounds.Start())
+		leftBound := values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
+		tmpLeftBound := leftBound
+		rawDataIndex := 0
+
+		for leftBound < t.bounds.Stop() {
+			// adjust bound
+			tmpLeftBound = leftBound.Add(t.w.Every())
+			leftBound = leftBound.Add(t.w.Every())
+			if tmpLeftBound < t.bounds.Start() {
+				tmpLeftBound = t.bounds.Start()
+			}
+			rightBound = rightBound.Add(t.w.Every())
+			if rightBound > t.bounds.Stop() {
+				rightBound = t.bounds.Stop()
+			}
+			bnds := interval.NewBounds(tmpLeftBound, rightBound)
+			key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
+			builder, created := t.cache.TableBuilder(key)
+			if created {
+				for _, c := range newCols {
+					_, err := builder.AddCol(c)
+					if err != nil {
+						return err
 					}
 				}
-
+			}
+			// find start position
+			for rawDataIndex < l && values.Time(cr.Times(timeIdx).Value(rawDataIndex)) < leftBound {
+				rawDataIndex++
+			}
+			// add data to window
+			for rawDataIndex < l && values.Time(cr.Times(timeIdx).Value(rawDataIndex)) < rightBound {
 				for j, c := range builder.Cols() {
 					switch c.Label {
 					case t.startCol:
@@ -429,14 +388,149 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 							return err
 						}
 					default:
-						if err := builder.AppendValue(j, execute.ValueForRow(cr, i, j)); err != nil {
+						//log.Println(rawDataIndex, "add to bound: ", bnds, execute.ValueForRow(cr, rawDataIndex, j))
+						if err := builder.AppendValue(j, execute.ValueForRow(cr, rawDataIndex, j)); err != nil {
 							return err
 						}
 					}
 				}
+				rawDataIndex++
 			}
+			// send to next operator
+			b, _ := builder.Table()
+			log.Println("window send")
+			//log.Printf("%p\n", t)
+			//log.Printf("%p\n", execute.OperatorMap[t.Label()])
+			execute.OperatorMap[t.Label()].PushToChannel(b)
+			rawDataIndex = 0
+			//log.Println(666)
 		}
+
 		return nil
+
+		//tm := values.Time(cr.Times(timeIdx).Value(0))
+		//oldBounds := t.getWindowBounds(tm)
+		//bndIndex := len(oldBounds) - 1
+		//bnds := oldBounds[bndIndex]
+		//key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
+		//builder,_ := t.cache.TableBuilder(key)
+		//
+		//count := 0
+		//
+		//for i := 0; i < l; i++ {
+		//
+		//	tm := values.Time(cr.Times(timeIdx).Value(i))
+		//	bounds := t.getWindowBounds(tm)
+		//	bnds = oldBounds[bndIndex]
+		//
+		//	for j := len(bounds)-1; j >= 0; j-- {
+		//		if bounds[j].Start() > oldBounds[len(oldBounds)-1].Start() {
+		//			oldBounds = append([]interval.Bounds{bounds[j]}, oldBounds...)
+		//			bndIndex++
+		//		}
+		//	}
+		//
+		//	log.Println("oldbounds: ", len(oldBounds))
+		//	log.Println("bnds: ", time.Unix(0, bnds.Start().Time().UnixNano()), time.Unix(0, bnds.Stop().Time().UnixNano()))
+		//
+		//	//bnds := oldBounds[bndIndex]
+		//	//key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
+		//	//builder, created := t.cache.TableBuilder(key)
+		//	//if created {
+		//	//	for _, c := range newCols {
+		//	//		_, err := builder.AddCol(c)
+		//	//		if err != nil {
+		//	//			return err
+		//	//		}
+		//	//	}
+		//	//}
+		//
+		//	if !bnds.Contains(tm) {
+		//		log.Println("send")
+		//
+		//		count++
+		//		if count > 0 {
+		//			log.Println("666")
+		//		}
+		//
+		//		// send window to next operator and bndIndex--
+		//		b, _ := builder.Table()
+		//		//log.Println("window table: ", b.Key())
+		//		execute.OperatorMap[t.Label()].PushToChannel(b)
+		//		bndIndex--
+		//	}
+		//
+		//	tmp := bndIndex
+		//	for i, allbnds := range oldBounds {
+		//		if tmp < 0 {
+		//			break
+		//		}
+		//		key = t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
+		//		builder, _ = t.cache.TableBuilder(key)
+		//		for j, c := range builder.Cols() {
+		//			switch c.Label {
+		//			case t.startCol:
+		//				if err := builder.AppendTime(startColIdx, allbnds.Start()); err != nil {
+		//					return err
+		//				}
+		//			case t.stopCol:
+		//				if err := builder.AppendTime(stopColIdx, allbnds.Stop()); err != nil {
+		//					return err
+		//				}
+		//			default:
+		//				log.Println(i, "add to bound: ", allbnds, execute.ValueForRow(cr, i, j))
+		//				if err := builder.AppendValue(j, execute.ValueForRow(cr, i, j)); err != nil {
+		//					return err
+		//				}
+		//			}
+		//		}
+		//		tmp--
+		//	}
+		//
+		//	//log.Println(" time: ", time.Unix(0, cr.Times(timeIdx).Value(i)))
+		//
+		//}
+
+		//return nil
+
+		//l := cr.Len()
+		//
+		//for i := 0; i < l; i++ {
+		//	tm := values.Time(cr.Times(timeIdx).Value(i))
+		//	bounds := t.getWindowBounds(tm)
+		//
+		//	for _, bnds := range bounds {
+		//		key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
+		//		builder, created := t.cache.TableBuilder(key)
+		//		if created {
+		//			for _, c := range newCols {
+		//				_, err := builder.AddCol(c)
+		//				if err != nil {
+		//					return err
+		//				}
+		//			}
+		//		}
+		//
+		//		for j, c := range builder.Cols() {
+		//			switch c.Label {
+		//			case t.startCol:
+		//				if err := builder.AppendTime(startColIdx, bnds.Start()); err != nil {
+		//					return err
+		//				}
+		//			case t.stopCol:
+		//				if err := builder.AppendTime(stopColIdx, bnds.Stop()); err != nil {
+		//					return err
+		//				}
+		//			default:
+		//				if err := builder.AppendValue(j, execute.ValueForRow(cr, i, j)); err != nil {
+		//					return err
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
+		//return nil
+
 	})
 }
 

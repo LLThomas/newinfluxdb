@@ -3,8 +3,8 @@ package execute
 import (
 	"context"
 	"fmt"
+	"github.com/gofrs/uuid"
 	"log"
-	"os"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -47,7 +47,11 @@ type consecutiveTransport struct {
 }
 
 func (t *consecutiveTransport) startPipeWorker(ctx context.Context) {
-	t.worker.Start(ctx)
+	t.worker.Start(t, ctx)
+}
+
+func (t *consecutiveTransport) PushToChannel(b flux.Table)  {
+	t.worker.message <- b
 }
 
 func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Transformation, n plan.Node, logger *zap.Logger) *consecutiveTransport {
@@ -106,18 +110,18 @@ func (t *consecutiveTransport) Finished() <-chan struct{} {
 	return t.finished
 }
 
-//func (t *consecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) error {
-//	select {
-//	case <-t.finished:
-//		return t.err()
-//	default:
-//	}
-//	t.pushMsg(&retractTableMsg{
-//		srcMessage: srcMessage(id),
-//		key:        key,
-//	})
-//	return nil
-//}
+func (t *consecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) error {
+	select {
+	case <-t.finished:
+		return t.err()
+	default:
+	}
+	t.pushMsg(&retractTableMsg{
+		srcMessage: srcMessage(id),
+		key:        key,
+	})
+	return nil
+}
 //
 //func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 //	select {
@@ -132,77 +136,16 @@ func (t *consecutiveTransport) Finished() <-chan struct{} {
 //	return nil
 //}
 //
-//func (t *consecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
-//	select {
-//	case <-t.finished:
-//		return t.err()
-//	default:
-//	}
-//	t.pushMsg(&updateWatermarkMsg{
-//		srcMessage: srcMessage(id),
-//		time:       time,
-//	})
-//	return nil
-//}
-//
-//func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) error {
-//	select {
-//	case <-t.finished:
-//		return t.err()
-//	default:
-//	}
-//	t.pushMsg(&updateProcessingTimeMsg{
-//		srcMessage: srcMessage(id),
-//		time:       time,
-//	})
-//	return nil
-//}
-//
-//func (t *consecutiveTransport) Finish(id DatasetID, err error) {
-//	select {
-//	case <-t.finished:
-//		return
-//	default:
-//	}
-//	t.pushMsg(&finishMsg{
-//		srcMessage: srcMessage(id),
-//		err:        err,
-//	})
-//}
-
-func (t *consecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) error {
-	select {
-	case <-t.finished:
-		return t.err()
-	default:
-	}
-	t.worker.message <- &retractTableMsg{srcMessage: srcMessage(id), key: key}
-	return nil
-}
-
-func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
-	select {
-	case <-t.finished:
-		return t.err()
-	default:
-	}
-
-	log.Println("processMsg: ", t.Label(), tbl.Key().Values())
-
-	t.worker.message <- &processMsg{srcMessage: srcMessage(id), table: newConsecutiveTransportTable(t, tbl)}
-	return nil
-}
-
 func (t *consecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
 	select {
 	case <-t.finished:
 		return t.err()
 	default:
 	}
-
-	log.Println("updateWatermarkMsg: ")
-
-	t.worker.message <- &updateWatermarkMsg{srcMessage: srcMessage(id), time: time}
+	t.pushMsg(&updateWatermarkMsg{
+		srcMessage: srcMessage(id),
+		time:       time,
+	})
 	return nil
 }
 
@@ -212,7 +155,10 @@ func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) err
 		return t.err()
 	default:
 	}
-	t.worker.message <- &updateProcessingTimeMsg{srcMessage: srcMessage(id), time: time}
+	t.pushMsg(&updateProcessingTimeMsg{
+		srcMessage: srcMessage(id),
+		time:       time,
+	})
 	return nil
 }
 
@@ -222,11 +168,31 @@ func (t *consecutiveTransport) Finish(id DatasetID, err error) {
 		return
 	default:
 	}
-
-	log.Println("finishMsg: ")
-
-	t.worker.message <- &finishMsg{srcMessage: srcMessage(id), err: err}
+	t.pushMsg(&finishMsg{
+		srcMessage: srcMessage(id),
+		err:        err,
+	})
 }
+
+// ***********************************************************
+// pipeline connectors
+// ***********************************************************
+
+func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
+	select {
+	case <-t.finished:
+		return t.err()
+	default:
+	}
+
+	//log.Println("processMsg: ", t.Label(), tbl.Key().Values())
+
+	t.worker.message <- tbl
+	return nil
+}
+
+// ***********************************************************
+// ***********************************************************
 
 func (t *consecutiveTransport) pushMsg(m Message) {
 	t.messages.Push(m)
@@ -298,15 +264,26 @@ PROCESS:
 	}
 }
 
-func pipeProcess(ctx context.Context, t Transformation, m Message) {
+func pipeProcess(ctx context.Context, ct *consecutiveTransport, m flux.Table) (finished bool, err error) {
 
-	//log.Println("start pipeProcess: ", t.Label(), m.Type())
+	log.Println("start pipeProcess: ", ct.t.Label(), m.Key())
 
-	if f, err := processMessage(ctx, t, m); err != nil || f {
-		// error handler
-		log.Println("pipeProcess error: ", err)
-		os.Exit(0)
-	}
+	ct.t.Process(DatasetID(uuid.Nil), m)
+
+	//switch m := m.(type) {
+	//case ProcessMsg:
+	//	b := m.Table()
+	//	_, span := StartSpanFromContext(ctx, reflect.TypeOf(ct.t).String(), ct.t.Label())
+	//	err = ct.t.Process(m.SrcDatasetID(), m)
+	//	if span != nil {
+	//		span.Finish()
+	//	}
+	//case FinishMsg:
+	//	ct.worker.Stop()
+	//}
+
+	return
+
 }
 
 func (t *consecutiveTransport) Label() string {

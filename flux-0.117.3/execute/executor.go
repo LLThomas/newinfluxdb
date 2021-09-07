@@ -80,11 +80,21 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 	}
 
 	// start transformer operator pipe worker
-	log.Println("number of pipe workers: ", len(es.consecutiveTransportSet))
-	for i, e := range es.consecutiveTransportSet {
-		log.Println("start worker: ", i)
+	n := len(es.consecutiveTransportSet)
+	log.Println("number of pipe workers: ", n)
+	for i := 0; i < n; i++ {
+		e := es.consecutiveTransportSet[i]
+		if i+1 < n {
+			OperatorMap[e.Label()] = es.consecutiveTransportSet[i+1]
+		} else {
+			OperatorMap[e.Label()] = nil
+		}
+		log.Println("start worker: ", e.Label())
 		e.startPipeWorker(es.ctx)
 	}
+
+	log.Println("consecutiveTransportSet: ", es.consecutiveTransportSet)
+	log.Println("OperatorMap: ", len(OperatorMap), OperatorMap)
 
 	es.do()
 	return es.results, es.metaCh, nil

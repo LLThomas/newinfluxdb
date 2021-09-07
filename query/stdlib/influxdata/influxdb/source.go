@@ -94,26 +94,30 @@ func (s *Source) processTables(ctx context.Context, tables query.TableIterator, 
 }
 
 func (s *Source) processTable(ctx context.Context, tbl flux.Table) error {
-	if len(s.ts) == 0 {
-		tbl.Done()
-		return nil
-	} else if len(s.ts) == 1 {
-		return s.ts[0].Process(s.id, tbl)
-	}
+	//if len(s.ts) == 0 {
+	//	tbl.Done()
+	//	return nil
+	//} else if len(s.ts) == 1 {
+	//	return s.ts[0].Process(s.id, tbl)
+	//}
+	//
+	//// There is more than one transformation so we need to
+	//// copy the table for each transformation.
+	//bufTable, err := execute.CopyTable(tbl)
+	//if err != nil {
+	//	return err
+	//}
+	//defer bufTable.Done()
+	//
+	//for _, t := range s.ts {
+	//	if err := t.Process(s.id, bufTable.Copy()); err != nil {
+	//		return err
+	//	}
+	//}
 
-	// There is more than one transformation so we need to
-	// copy the table for each transformation.
-	bufTable, err := execute.CopyTable(tbl)
-	if err != nil {
-		return err
-	}
-	defer bufTable.Done()
+	// only consider one transformation
+	return s.ts[0].Process(s.id, tbl)
 
-	for _, t := range s.ts {
-		if err := t.Process(s.id, bufTable.Copy()); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
