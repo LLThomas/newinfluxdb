@@ -119,6 +119,10 @@ type reduceTransformation struct {
 	identity values.Object
 }
 
+func (t *reduceTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewReduceTransformation(ctx context.Context, spec *ReduceProcedureSpec, d execute.Dataset, cache execute.TableBuilderCache) (*reduceTransformation, error) {
 	fn := execute.NewRowReduceFn(spec.Fn.Fn, compiler.ToScope(spec.Fn.Scope))
 	return &reduceTransformation{

@@ -128,6 +128,10 @@ type DiffTransformation struct {
 	nansEqual bool
 }
 
+func (t *DiffTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 type diffParentState struct {
 	mark       execute.Time
 	processing execute.Time

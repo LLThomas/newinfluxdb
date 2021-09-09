@@ -195,6 +195,10 @@ type pivotTransformation struct {
 	nextRowCol map[string]rowCol
 }
 
+func (t *pivotTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewPivotTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *PivotProcedureSpec) *pivotTransformation {
 	t := &pivotTransformation{
 		d:          d,
@@ -438,6 +442,10 @@ type pivotTransformation2 struct {
 
 	watermark  execute.Time
 	processing execute.Time
+}
+
+func (t *pivotTransformation2) ClearCache() error {
+	panic("implement me")
 }
 
 func newPivotTransformation2(ctx context.Context, spec PivotProcedureSpec, id execute.DatasetID, alloc *memory.Allocator) (execute.Transformation, execute.Dataset, error) {

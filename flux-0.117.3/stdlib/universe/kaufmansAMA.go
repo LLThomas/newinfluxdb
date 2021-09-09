@@ -112,6 +112,10 @@ type kamaTransformation struct {
 	column string
 }
 
+func (t *kamaTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewkamaTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *KamaProcedureSpec) *kamaTransformation {
 	return &kamaTransformation{
 		d:     d,

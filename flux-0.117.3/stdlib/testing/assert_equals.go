@@ -104,6 +104,10 @@ type AssertEqualsTransformation struct {
 	name string
 }
 
+func (t *AssertEqualsTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 type AssertEqualsError struct {
 	msg string
 }

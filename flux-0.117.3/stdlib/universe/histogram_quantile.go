@@ -125,6 +125,10 @@ type histogramQuantileTransformation struct {
 	spec HistogramQuantileProcedureSpec
 }
 
+func (t histogramQuantileTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 type bucket struct {
 	count      float64
 	upperBound float64

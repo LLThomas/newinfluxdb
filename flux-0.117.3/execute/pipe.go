@@ -8,16 +8,23 @@ import (
 )
 
 var OperatorMap map[string]*consecutiveTransport = make(map[string]*consecutiveTransport, 10)
+var ResOperator Transformation
 
-//var	ByName map[string]int = make(map[string]int, 99)
-//var	ByIndex map[int]*consecutiveTransport = make(map[int]*consecutiveTransport, 99)
-//
-//func FindNextConsecutiveTransport(operatorName string) *consecutiveTransport {
-//	if ByName[operatorName] == len(ByName)-1 {
-//		return nil
-//	}
-//	return ByIndex[ByName[operatorName]+1]
-//}
+func ConnectOperator(name string, b flux.Table) {
+
+	log.Println("ConnectOperator: ")
+
+	next := OperatorMap[name]
+	if OperatorMap[name] == nil {
+		// res handler
+		log.Println("res: ", b.Key())
+		ResOperator.Process(DatasetID{0}, b)
+	} else {
+		log.Println("next: ", next.Label())
+		next.PushToChannel(b)
+	}
+	log.Println(999)
+}
 
 type pipeWorker struct {
 
@@ -43,6 +50,7 @@ func newPipeWorker(t Transformation) *pipeWorker {
 func (p *pipeWorker) Start(ct *consecutiveTransport, ctx context.Context)  {
 	go func() {
 		defer func() {
+			// no error handler , no //case err := <-es.dispatcher.Err(): in executor.go: TODO
 			log.Println("pipe worker finished")
 		}()
 		p.run(ct, ctx)
@@ -73,9 +81,7 @@ func (p *pipeWorker) run(ct *consecutiveTransport,ctx context.Context)  {
 		case <-p.closing:
 			return
 		case msg := <- p.message:
-			pipeProcess(ctx, ct, msg)
-			// send the result to next operator channel
-
+			ct.pipeProcesses(ctx, msg)
 		}
 	}
 }

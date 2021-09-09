@@ -162,6 +162,10 @@ type rangeTransformation struct {
 	stopCol  string
 }
 
+func (t *rangeTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewRangeTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *RangeProcedureSpec, absolute execute.Bounds) (*rangeTransformation, error) {
 	return &rangeTransformation{
 		d:        d,

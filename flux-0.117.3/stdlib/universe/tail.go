@@ -106,6 +106,10 @@ type tailTransformation struct {
 	n, offset int
 }
 
+func (t *tailTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewTailTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *TailProcedureSpec) *tailTransformation {
 	return &tailTransformation{
 		d:      d,

@@ -270,6 +270,10 @@ type ToTransformation struct {
 	buf                *storage.BufferedPointsWriter
 }
 
+func (t *ToTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 // RetractTable retracts the table for the transformation for the `to` flux function.
 func (t *ToTransformation) RetractTable(id execute.DatasetID, key flux.GroupKey) error {
 	return t.d.RetractTable(key)

@@ -32,6 +32,10 @@ type windowTransformation2 struct {
 	timeCol, startCol, stopCol string
 }
 
+func (w *windowTransformation2) ClearCache() error {
+	panic("implement me")
+}
+
 func newWindowTransformation2(id execute.DatasetID, spec *WindowProcedureSpec, bounds *execute.Bounds, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
 	window, err := interval.NewWindow(spec.Window.Every, spec.Window.Period, spec.Window.Offset)
 	if err != nil {

@@ -114,6 +114,10 @@ type tripleExponentialDerivativeTransformation struct {
 	n int64
 }
 
+func (t *tripleExponentialDerivativeTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewTripleExponentialDerivativeTransformation(d execute.Dataset, cache execute.TableBuilderCache, alloc *memory.Allocator, spec *TripleExponentialDerivativeProcedureSpec) *tripleExponentialDerivativeTransformation {
 	return &tripleExponentialDerivativeTransformation{
 		d:     d,

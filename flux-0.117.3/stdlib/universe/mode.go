@@ -103,6 +103,10 @@ type modeTransformation struct {
 	column string
 }
 
+func (t *modeTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewModeTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ModeProcedureSpec) *modeTransformation {
 	return &modeTransformation{
 		d:      d,

@@ -111,6 +111,10 @@ type interpolateTransformation struct {
 	window execute.Window
 }
 
+func (t *interpolateTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewInterpolateTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *LinearInterpolateProcedureSpec) *interpolateTransformation {
 	return &interpolateTransformation{
 		d:     d,

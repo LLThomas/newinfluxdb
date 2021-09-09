@@ -81,6 +81,10 @@ type resetsTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *resetsTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewResetsTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ResetsProcedureSpec) *resetsTransformation {
 	return &resetsTransformation{
 		d:     d,

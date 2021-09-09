@@ -101,6 +101,10 @@ type keysTransformation struct {
 	column string
 }
 
+func (t *keysTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewKeysTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *KeysProcedureSpec) *keysTransformation {
 	return &keysTransformation{
 		d:      d,

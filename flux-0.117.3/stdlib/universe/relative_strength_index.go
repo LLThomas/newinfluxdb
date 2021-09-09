@@ -128,6 +128,10 @@ type relativeStrengthIndexTransformation struct {
 	lastVal []interface{}
 }
 
+func (t *relativeStrengthIndexTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewRelativeStrengthIndexTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *RelativeStrengthIndexProcedureSpec) *relativeStrengthIndexTransformation {
 	return &relativeStrengthIndexTransformation{
 		d:       d,

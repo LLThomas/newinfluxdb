@@ -148,6 +148,10 @@ type filterTransformation struct {
 	alloc           *memory.Allocator
 }
 
+func (t *filterTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewFilterTransformation(ctx context.Context, spec *FilterProcedureSpec, id execute.DatasetID, alloc *memory.Allocator) (execute.Transformation, execute.Dataset, error) {
 	fn := execute.NewRowPredicateFn(spec.Fn.Fn, compiler.ToScope(spec.Fn.Scope))
 	t := &filterTransformation{

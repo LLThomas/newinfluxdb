@@ -103,6 +103,10 @@ type instantRateTransformation struct {
 	isRate bool
 }
 
+func (t *instantRateTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewInstantRateTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *InstantRateProcedureSpec) *instantRateTransformation {
 	return &instantRateTransformation{
 		d:      d,

@@ -13,6 +13,10 @@ type dataset struct {
 	cache *table.BuilderCache
 }
 
+func (d *dataset) ClearCache() error {
+	panic("implement me")
+}
+
 // New constructs an execute.Dataset that is compatible with
 // the table.BuilderCache.
 //

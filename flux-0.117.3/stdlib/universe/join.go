@@ -242,6 +242,10 @@ type mergeJoinTransformation struct {
 	keys []string
 }
 
+func (t *mergeJoinTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewMergeJoinTransformation(d execute.Dataset, cache *MergeJoinCache, spec *MergeJoinProcedureSpec, parents []execute.DatasetID, tableNames map[execute.DatasetID]string) *mergeJoinTransformation {
 	t := &mergeJoinTransformation{
 		d:         d,

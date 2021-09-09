@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -889,6 +890,9 @@ func (e *ResultEncoder) Encode(w io.Writer, result flux.Result) (int64, error) {
 
 	resultName := result.Name()
 	err := result.Tables().Do(func(tbl flux.Table) error {
+
+		log.Println("encode: ")
+
 		e.written = true
 		// Update cols with table cols
 		cols := metaCols
@@ -944,6 +948,9 @@ func (e *ResultEncoder) Encode(w io.Writer, result flux.Result) (int64, error) {
 		}
 
 		if err := tbl.Do(func(cr flux.ColReader) error {
+
+			log.Println("table: ", cr.Len())
+
 			record := row[defaultRecordStartIdx:]
 			l := cr.Len()
 			for i := 0; i < l; i++ {

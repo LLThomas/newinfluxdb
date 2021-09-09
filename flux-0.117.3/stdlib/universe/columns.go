@@ -95,6 +95,10 @@ type columnsTransformation struct {
 	column string
 }
 
+func (t *columnsTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewColumnsTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ColumnsProcedureSpec) *columnsTransformation {
 	return &columnsTransformation{
 		d:      d,

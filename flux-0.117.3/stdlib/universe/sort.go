@@ -125,6 +125,10 @@ type sortTransformation struct {
 	desc bool
 }
 
+func (t *sortTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewSortTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *SortProcedureSpec) *sortTransformation {
 	return &sortTransformation{
 		d:     d,

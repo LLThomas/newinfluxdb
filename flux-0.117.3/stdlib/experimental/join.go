@@ -138,6 +138,10 @@ type mergeJoinTransformation struct {
 	done  bool
 }
 
+func (t *mergeJoinTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewMergeJoinTransformation(d execute.Dataset, cache *mergeJoinCache) *mergeJoinTransformation {
 	return &mergeJoinTransformation{
 		d:     d,

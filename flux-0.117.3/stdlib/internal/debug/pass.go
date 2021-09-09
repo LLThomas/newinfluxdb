@@ -78,6 +78,10 @@ type passTransformation struct {
 	d *execute.PassthroughDataset
 }
 
+func (t *passTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewPassTransformation(id execute.DatasetID, spec *PassProcedureSpec) (execute.Transformation, execute.Dataset) {
 	t := &passTransformation{
 		d: execute.NewPassthroughDataset(id),

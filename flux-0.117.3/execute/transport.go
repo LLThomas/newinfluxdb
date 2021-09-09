@@ -46,6 +46,10 @@ type consecutiveTransport struct {
 	worker *pipeWorker
 }
 
+func (t *consecutiveTransport) ClearCache() error {
+	panic("not implement")
+}
+
 func (t *consecutiveTransport) startPipeWorker(ctx context.Context) {
 	t.worker.Start(t, ctx)
 }
@@ -162,17 +166,17 @@ func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) err
 	return nil
 }
 
-func (t *consecutiveTransport) Finish(id DatasetID, err error) {
-	select {
-	case <-t.finished:
-		return
-	default:
-	}
-	t.pushMsg(&finishMsg{
-		srcMessage: srcMessage(id),
-		err:        err,
-	})
-}
+//func (t *consecutiveTransport) Finish(id DatasetID, err error) {
+//	select {
+//	case <-t.finished:
+//		return
+//	default:
+//	}
+//	t.pushMsg(&finishMsg{
+//		srcMessage: srcMessage(id),
+//		err:        err,
+//	})
+//}
 
 // ***********************************************************
 // pipeline connectors
@@ -189,6 +193,19 @@ func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 
 	t.worker.message <- tbl
 	return nil
+}
+
+func (t *consecutiveTransport) Finish(id DatasetID, err error) {
+	select {
+	case <-t.finished:
+		return
+	default:
+	}
+	//t.pushMsg(&finishMsg{
+	//	srcMessage: srcMessage(id),
+	//	err:        err,
+	//})
+	t.worker.message <- nil
 }
 
 // ***********************************************************
@@ -264,23 +281,45 @@ PROCESS:
 	}
 }
 
-func pipeProcess(ctx context.Context, ct *consecutiveTransport, m flux.Table) (finished bool, err error) {
+func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table)  {
 
-	log.Println("start pipeProcess: ", ct.t.Label(), m.Key())
+	if f, err := pipeProcess(ctx, t.worker, t.t, m); err != nil || f {
 
-	ct.t.Process(DatasetID(uuid.Nil), m)
+		// err will go to the channel executor.go:336 TODO
+		t.setErr(err)
 
-	//switch m := m.(type) {
-	//case ProcessMsg:
-	//	b := m.Table()
-	//	_, span := StartSpanFromContext(ctx, reflect.TypeOf(ct.t).String(), ct.t.Label())
-	//	err = ct.t.Process(m.SrcDatasetID(), m)
-	//	if span != nil {
-	//		span.Finish()
-	//	}
-	//case FinishMsg:
-	//	ct.worker.Stop()
-	//}
+		if !f {
+			t.t.Finish(DatasetID{0}, t.err())
+		}
+
+		// close t.finished will close channel in executor.go (case <-t.Finished())
+		close(t.finished)
+
+		return
+	}
+
+}
+
+func pipeProcess(ctx context.Context, w *pipeWorker, t Transformation, m flux.Table) (finished bool, err error) {
+
+	if m != nil {
+		log.Println("start pipeProcess: ", t.Label(), m.Key())
+	}
+
+	// table is nil means finish msg
+	// stop pipeworker and clear all data int dataset
+	if m == nil {
+		w.Stop()
+		err = t.ClearCache()
+		finished = true
+		return
+	}
+
+	_, span := StartSpanFromContext(ctx, reflect.TypeOf(t).String(), t.Label())
+	t.Process(DatasetID(uuid.Nil), m)
+	if span != nil {
+		span.Finish()
+	}
 
 	return
 

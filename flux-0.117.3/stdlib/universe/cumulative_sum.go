@@ -106,6 +106,10 @@ type cumulativeSumTransformation struct {
 	spec  CumulativeSumProcedureSpec
 }
 
+func (t *cumulativeSumTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewCumulativeSumTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *CumulativeSumProcedureSpec) *cumulativeSumTransformation {
 	return &cumulativeSumTransformation{
 		d:     d,

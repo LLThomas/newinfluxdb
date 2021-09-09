@@ -184,6 +184,10 @@ type tableTransformation struct {
 	mem  memory.Allocator
 }
 
+func (t *tableTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewTableTransformation(ctx context.Context, spec *TableProcedureSpec, id execute.DatasetID, mem memory.Allocator) (execute.Transformation, execute.Dataset, error) {
 	t := &tableTransformation{
 		d:    execute.NewPassthroughDataset(id),

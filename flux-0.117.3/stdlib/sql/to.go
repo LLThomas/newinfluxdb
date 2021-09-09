@@ -144,6 +144,10 @@ type ToSQLTransformation struct {
 	tx    *sql.Tx
 }
 
+func (t *ToSQLTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func (t *ToSQLTransformation) RetractTable(id execute.DatasetID, key flux.GroupKey) error {
 	return t.d.RetractTable(key)
 }

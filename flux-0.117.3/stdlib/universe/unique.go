@@ -101,6 +101,10 @@ type uniqueTransformation struct {
 	column string
 }
 
+func (t *uniqueTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewUniqueTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *UniqueProcedureSpec) *uniqueTransformation {
 	return &uniqueTransformation{
 		d:      d,

@@ -124,6 +124,10 @@ type labelReplaceTransformation struct {
 	replacement string
 }
 
+func (t *labelReplaceTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewLabelReplaceTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *LabelReplaceProcedureSpec) *labelReplaceTransformation {
 	return &labelReplaceTransformation{
 		d:     d,

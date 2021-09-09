@@ -94,6 +94,10 @@ type maskTransformation struct {
 	spec *maskProcedureSpec
 }
 
+func (t *maskTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func newMaskTransformation(spec *maskProcedureSpec, id execute.DatasetID) (execute.Transformation, execute.Dataset, error) {
 	t := &maskTransformation{
 		d:    execute.NewPassthroughDataset(id),

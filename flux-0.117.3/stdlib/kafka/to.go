@@ -225,6 +225,10 @@ type ToKafkaTransformation struct {
 	spec  *ToKafkaProcedureSpec
 }
 
+func (t *ToKafkaTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func (t *ToKafkaTransformation) RetractTable(id execute.DatasetID, key flux.GroupKey) error {
 	return t.d.RetractTable(key)
 }

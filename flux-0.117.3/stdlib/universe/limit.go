@@ -108,6 +108,10 @@ type limitTransformation struct {
 	n, offset int
 }
 
+func (t *limitTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewLimitTransformation(spec *LimitProcedureSpec, id execute.DatasetID) (execute.Transformation, execute.Dataset) {
 	d := execute.NewPassthroughDataset(id)
 	t := &limitTransformation{

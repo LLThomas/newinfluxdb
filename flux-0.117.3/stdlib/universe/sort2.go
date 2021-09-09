@@ -24,6 +24,10 @@ type sortTransformation2 struct {
 	compare arrowutil.CompareFunc
 }
 
+func (s *sortTransformation2) ClearCache() error {
+	panic("implement me")
+}
+
 func newSortTransformation2(id execute.DatasetID, spec *SortProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
 	t := &sortTransformation2{
 		d:       execute.NewPassthroughDataset(id),

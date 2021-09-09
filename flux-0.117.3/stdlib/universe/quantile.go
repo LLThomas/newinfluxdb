@@ -389,6 +389,10 @@ type ExactQuantileSelectorTransformation struct {
 	a     *memory.Allocator
 }
 
+func (t *ExactQuantileSelectorTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewExactQuantileSelectorTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ExactQuantileSelectProcedureSpec, a *memory.Allocator) *ExactQuantileSelectorTransformation {
 	if spec.SelectorConfig.Column == "" {
 		spec.SelectorConfig.Column = execute.DefaultValueColLabel

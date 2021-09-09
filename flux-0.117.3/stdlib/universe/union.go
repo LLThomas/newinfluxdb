@@ -89,6 +89,10 @@ type unionTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *unionTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 type unionParentState struct {
 	mark       execute.Time
 	processing execute.Time

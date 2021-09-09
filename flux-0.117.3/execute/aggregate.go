@@ -18,6 +18,10 @@ type aggregateTransformation struct {
 	config AggregateConfig
 }
 
+func (t *aggregateTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 type AggregateConfig struct {
 	plan.DefaultCost
 	Columns []string `json:"columns"`

@@ -101,6 +101,10 @@ type exponentialMovingAverageTransformation struct {
 	n int64
 }
 
+func (t *exponentialMovingAverageTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewExponentialMovingAverageTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ExponentialMovingAverageProcedureSpec) *exponentialMovingAverageTransformation {
 	return &exponentialMovingAverageTransformation{
 		d:     d,

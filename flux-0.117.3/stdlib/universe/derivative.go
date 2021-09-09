@@ -147,6 +147,10 @@ type derivativeTransformation struct {
 	timeCol     string
 }
 
+func (t *derivativeTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewDerivativeTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *DerivativeProcedureSpec) *derivativeTransformation {
 	return &derivativeTransformation{
 		d:           d,

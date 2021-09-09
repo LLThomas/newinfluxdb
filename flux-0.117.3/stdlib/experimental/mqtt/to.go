@@ -260,6 +260,10 @@ type ToMQTTTransformation struct {
 	spec  *ToMQTTProcedureSpec
 }
 
+func (t *ToMQTTTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func (t *ToMQTTTransformation) RetractTable(id execute.DatasetID, key flux.GroupKey) error {
 	return t.d.RetractTable(key)
 }

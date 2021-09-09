@@ -133,6 +133,10 @@ type integralTransformation struct {
 	spec IntegralProcedureSpec
 }
 
+func (t *integralTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewIntegralTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *IntegralProcedureSpec) *integralTransformation {
 	return &integralTransformation{
 		d:     d,

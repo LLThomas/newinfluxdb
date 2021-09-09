@@ -76,6 +76,10 @@ type fillTransformation struct {
 	mem memory.Allocator
 }
 
+func (t *fillTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func newFillTransformation(id execute.DatasetID, mem memory.Allocator) (execute.Transformation, execute.Dataset, error) {
 	t := &fillTransformation{
 		d:   execute.NewPassthroughDataset(id),

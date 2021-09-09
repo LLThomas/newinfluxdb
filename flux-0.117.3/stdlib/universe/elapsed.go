@@ -124,6 +124,10 @@ type elapsedTransformation struct {
 	columnName string
 }
 
+func (t *elapsedTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewElapsedTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ElapsedProcedureSpec) *elapsedTransformation {
 	return &elapsedTransformation{
 		d:     d,

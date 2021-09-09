@@ -100,6 +100,10 @@ type mapTransformation struct {
 	mem memory.Allocator
 }
 
+func (t *mapTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, id execute.DatasetID, mem memory.Allocator) (execute.Transformation, execute.Dataset, error) {
 	fn := execute.NewRowMapFn(spec.Fn.Fn, compiler.ToScope(spec.Fn.Scope))
 	t := &mapTransformation{

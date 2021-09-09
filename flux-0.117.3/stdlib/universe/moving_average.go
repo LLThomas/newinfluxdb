@@ -109,6 +109,10 @@ type movingAverageTransformation struct {
 	notEmpty      []bool
 }
 
+func (t *movingAverageTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewMovingAverageTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *MovingAverageProcedureSpec) *movingAverageTransformation {
 	return &movingAverageTransformation{
 		d:     d,

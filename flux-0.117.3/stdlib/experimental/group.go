@@ -126,6 +126,10 @@ type groupTransformation struct {
 	keys []string
 }
 
+func (t *groupTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewGroupTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *GroupProcedureSpec) *groupTransformation {
 	t := &groupTransformation{
 		d:     d,

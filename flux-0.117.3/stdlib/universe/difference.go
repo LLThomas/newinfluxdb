@@ -132,6 +132,10 @@ type differenceTransformation struct {
 	keepFirst   bool
 }
 
+func (t *differenceTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewDifferenceTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *DifferenceProcedureSpec) *differenceTransformation {
 	return &differenceTransformation{
 		d:           d,

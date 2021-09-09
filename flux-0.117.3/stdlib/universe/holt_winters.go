@@ -151,6 +151,10 @@ type holtWintersTransformation struct {
 	interval   values.Duration
 }
 
+func (hwt *holtWintersTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewHoltWintersTransformation(d execute.Dataset, cache execute.TableBuilderCache, alloc *fluxmemory.Allocator, spec *HoltWintersProcedureSpec) *holtWintersTransformation {
 	return &holtWintersTransformation{
 		d:          d,

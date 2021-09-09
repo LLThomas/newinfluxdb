@@ -42,9 +42,18 @@ type rowSelectorTransformation struct {
 	selectorTransformation
 	selector RowSelector
 }
+
+func (t *rowSelectorTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 type indexSelectorTransformation struct {
 	selectorTransformation
 	selector IndexSelector
+}
+
+func (t *indexSelectorTransformation) ClearCache() error {
+	panic("implement me")
 }
 
 func NewRowSelectorTransformationAndDataset(id DatasetID, mode AccumulationMode, selector RowSelector, config SelectorConfig, a *memory.Allocator) (*rowSelectorTransformation, Dataset) {

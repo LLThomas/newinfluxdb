@@ -93,8 +93,8 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 		e.startPipeWorker(es.ctx)
 	}
 
-	log.Println("consecutiveTransportSet: ", es.consecutiveTransportSet)
-	log.Println("OperatorMap: ", len(OperatorMap), OperatorMap)
+	//log.Println("consecutiveTransportSet: ", es.consecutiveTransportSet)
+	//log.Println("OperatorMap: ", len(OperatorMap), OperatorMap)
 
 	es.do()
 	return es.results, es.metaCh, nil
@@ -184,6 +184,9 @@ func (v *createExecutionNodeVisitor) Visit(node plan.Node) error {
 		r := newResult(yieldSpec.YieldName())
 		v.es.results[yieldSpec.YieldName()] = r
 		v.nodes[skipYields(node)].AddTransformation(r)
+
+		ResOperator = r
+
 		return nil
 	}
 
@@ -321,29 +324,32 @@ func (es *executionState) do() {
 		}(src)
 	}
 
-	//wg.Add(1)
+	wg.Add(1)
 	//es.dispatcher.Start(es.resources.ConcurrencyQuota, es.ctx)
-	//go func() {
-	//	defer wg.Done()
-	//
-	//	// Wait for all transports to finish
-	//	for _, t := range es.transports {
-	//		select {
-	//		case <-t.Finished():
-	//		case <-es.ctx.Done():
-	//			es.abort(es.ctx.Err())
-	//		case err := <-es.dispatcher.Err():
-	//			if err != nil {
-	//				es.abort(err)
-	//			}
-	//		}
-	//	}
-	//	// Check for any errors on the dispatcher
-	//	err := es.dispatcher.Stop()
-	//	if err != nil {
-	//		es.abort(err)
-	//	}
-	//}()
+	go func() {
+		defer wg.Done()
+
+		// Wait for all transports to finish
+		for _, t := range es.transports {
+			select {
+			case <-t.Finished():
+			case <-es.ctx.Done():
+				es.abort(es.ctx.Err())
+
+				// TODO: pipeWorker error handle
+
+			//case err := <-es.dispatcher.Err():
+			//	if err != nil {
+			//		es.abort(err)
+			//	}
+			}
+		}
+		// Check for any errors on the dispatcher
+		//err := es.dispatcher.Stop()
+		//if err != nil {
+		//	es.abort(err)
+		//}
+	}()
 
 	go func() {
 		defer close(es.metaCh)

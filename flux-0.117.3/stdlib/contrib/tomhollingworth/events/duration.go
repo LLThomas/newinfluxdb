@@ -158,6 +158,10 @@ type durationTransformation struct {
 	isStop     bool
 }
 
+func (t *durationTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewDurationTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *DurationProcedureSpec) *durationTransformation {
 	return &durationTransformation{
 		d:     d,

@@ -161,6 +161,10 @@ type stateTrackingTransformation struct {
 	durationUnit int64
 }
 
+func (t *stateTrackingTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewStateTrackingTransformation(ctx context.Context, spec *StateTrackingProcedureSpec, d execute.Dataset, cache execute.TableBuilderCache) (*stateTrackingTransformation, error) {
 	fn := execute.NewRowPredicateFn(spec.Fn.Fn, compiler.ToScope(spec.Fn.Scope))
 	return &stateTrackingTransformation{

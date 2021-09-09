@@ -136,6 +136,10 @@ type shiftTransformation struct {
 	columns []string
 }
 
+func (t *shiftTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewShiftTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ShiftProcedureSpec) *shiftTransformation {
 	return &shiftTransformation{
 		d:       d,

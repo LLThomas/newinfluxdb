@@ -65,6 +65,10 @@ type AssertEmptyTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *AssertEmptyTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func createAssertEmptyTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
 	cache := execute.NewTableBuilderCache(a.Allocator())
 	dataset := execute.NewDataset(id, mode, cache)

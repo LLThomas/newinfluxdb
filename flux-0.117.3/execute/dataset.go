@@ -20,6 +20,8 @@ type Dataset interface {
 	Finish(error)
 
 	SetTriggerSpec(t plan.TriggerSpec)
+
+	ClearCache() error
 }
 
 // DatasetContext represents a Dataset with a context.Context attached.
@@ -84,6 +86,21 @@ type dataset struct {
 	processingTime Time
 
 	cache DataCache
+}
+
+func (d *dataset) ClearCache() (err error) {
+	d.cache.ForEachWithContext(func(key flux.GroupKey, trigger Trigger, tableContext TableContext) {
+		if err != nil {
+			// skip once error occurs
+			return
+		}
+		if err = d.ctx.Err(); err != nil {
+			return
+		}
+		d.cache.DiscardTable(key)
+		d.cache.ExpireTable(key)
+	})
+	return err
 }
 
 func NewDataset(id DatasetID, accMode AccumulationMode, cache DataCache) *dataset {
@@ -201,6 +218,10 @@ func (d *dataset) Finish(err error) {
 type PassthroughDataset struct {
 	id DatasetID
 	ts TransformationSet
+}
+
+func (d *PassthroughDataset) ClearCache() error {
+	panic("implement me")
 }
 
 // NewPassthroughDataset constructs a new PassthroughDataset.

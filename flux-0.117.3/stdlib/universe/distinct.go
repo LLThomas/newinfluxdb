@@ -102,6 +102,10 @@ type distinctTransformation struct {
 	column string
 }
 
+func (t *distinctTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewDistinctTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *DistinctProcedureSpec) *distinctTransformation {
 	return &distinctTransformation{
 		d:      d,

@@ -140,6 +140,10 @@ type histogramTransformation struct {
 	spec HistogramProcedureSpec
 }
 
+func (t *histogramTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewHistogramTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *HistogramProcedureSpec) *histogramTransformation {
 	sort.Float64s(spec.Bins)
 	return &histogramTransformation{

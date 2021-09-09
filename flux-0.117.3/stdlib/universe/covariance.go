@@ -133,6 +133,10 @@ type CovarianceTransformation struct {
 	xym2 float64
 }
 
+func (t *CovarianceTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func createCovarianceTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*CovarianceProcedureSpec)
 	if !ok {

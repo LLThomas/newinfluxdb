@@ -111,6 +111,10 @@ type holtWintersTransformation struct {
 	trendFactor     float64
 }
 
+func (t *holtWintersTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewHoltWintersTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *HoltWintersProcedureSpec) *holtWintersTransformation {
 	return &holtWintersTransformation{
 		d:               d,

@@ -23,6 +23,8 @@ type Transformation interface {
 	Finish(id DatasetID, err error)
 	SetLabel(label string)
 	Label() string
+
+	ClearCache() error
 }
 
 // TransformationSet is a group of transformations.

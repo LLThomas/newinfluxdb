@@ -120,6 +120,10 @@ type chandeMomentumOscillatorTransformation struct {
 	columns []string
 }
 
+func (t *chandeMomentumOscillatorTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewChandeMomentumOscillatorTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ChandeMomentumOscillatorProcedureSpec) *chandeMomentumOscillatorTransformation {
 	return &chandeMomentumOscillatorTransformation{
 		d:       d,

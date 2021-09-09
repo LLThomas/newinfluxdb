@@ -76,6 +76,10 @@ type timestampTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *timestampTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewTimestampTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *TimestampProcedureSpec) *timestampTransformation {
 	return &timestampTransformation{
 		d:     d,

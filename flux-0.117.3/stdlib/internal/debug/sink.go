@@ -78,6 +78,10 @@ type sinkTransformation struct {
 	d *execute.PassthroughDataset
 }
 
+func (t *sinkTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewSinkTransformation(id execute.DatasetID, spec *SinkProcedureSpec) (execute.Transformation, execute.Dataset) {
 	t := &sinkTransformation{
 		d: execute.NewPassthroughDataset(id),

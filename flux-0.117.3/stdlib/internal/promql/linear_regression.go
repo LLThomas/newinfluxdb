@@ -111,6 +111,10 @@ type linearRegressionTransformation struct {
 	fromNow float64
 }
 
+func (t *linearRegressionTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewLinearRegressionTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *LinearRegressionProcedureSpec) *linearRegressionTransformation {
 	return &linearRegressionTransformation{
 		d:       d,

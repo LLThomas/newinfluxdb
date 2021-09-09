@@ -101,6 +101,10 @@ type setTransformation struct {
 	key, value string
 }
 
+func (t *setTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewSetTransformation(
 	d execute.Dataset,
 	cache execute.TableBuilderCache,

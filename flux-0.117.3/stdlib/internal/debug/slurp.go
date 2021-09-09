@@ -82,6 +82,10 @@ type slurpTransformation struct {
 	mem memory.Allocator
 }
 
+func (t *slurpTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewSlurpTransformation(id execute.DatasetID, spec *SlurpProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset) {
 	t := &slurpTransformation{
 		d:   execute.NewPassthroughDataset(id),

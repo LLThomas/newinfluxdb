@@ -230,6 +230,10 @@ type fixedWindowTransformation struct {
 	createEmpty bool
 }
 
+func (t *fixedWindowTransformation) ClearCache() error {
+	return t.d.ClearCache()
+}
+
 func NewFixedWindowTransformation(
 	d execute.Dataset,
 	cache execute.TableBuilderCache,
@@ -349,7 +353,7 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 		tmpLeftBound := leftBound
 		rawDataIndex := 0
 
-		for leftBound < t.bounds.Stop() {
+		for leftBound.Add(t.w.Every()) < t.bounds.Stop() {
 			// adjust bound
 			tmpLeftBound = leftBound.Add(t.w.Every())
 			leftBound = leftBound.Add(t.w.Every())
@@ -399,11 +403,8 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 			// send to next operator
 			b, _ := builder.Table()
 			log.Println("window send")
-			//log.Printf("%p\n", t)
-			//log.Printf("%p\n", execute.OperatorMap[t.Label()])
-			execute.OperatorMap[t.Label()].PushToChannel(b)
+			execute.ConnectOperator(t.Label(), b)
 			rawDataIndex = 0
-			//log.Println(666)
 		}
 
 		return nil

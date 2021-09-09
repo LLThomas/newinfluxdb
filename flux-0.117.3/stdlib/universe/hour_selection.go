@@ -121,6 +121,10 @@ type hourSelectionTransformation struct {
 	timeCol string
 }
 
+func (t *hourSelectionTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewHourSelectionTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *HourSelectionProcedureSpec) *hourSelectionTransformation {
 	return &hourSelectionTransformation{
 		d:       d,

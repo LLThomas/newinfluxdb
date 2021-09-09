@@ -114,6 +114,10 @@ type extrapolatedRateTransformation struct {
 	isRate    bool
 }
 
+func (t *extrapolatedRateTransformation) ClearCache() error {
+	panic("implement me")
+}
+
 func NewExtrapolatedRateTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *ExtrapolatedRateProcedureSpec) *extrapolatedRateTransformation {
 	return &extrapolatedRateTransformation{
 		d:         d,
