@@ -58,8 +58,6 @@ func (s *result) Process(id DatasetID, tbl flux.Table) error {
 	case <-s.aborted:
 	}
 
-	log.Println("333")
-
 	return nil
 }
 
@@ -73,14 +71,12 @@ func (s *result) Do(f func(flux.Table) error) error {
 		case err := <-s.abortErr:
 			return err
 		case msg, more := <-s.tables:
-			log.Println("!more")
 			if !more {
 				return nil
 			}
 			if msg.err != nil {
 				return msg.err
 			}
-			log.Println("f(msg.table)")
 			if err := f(msg.table); err != nil {
 				return err
 			}

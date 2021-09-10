@@ -330,20 +330,27 @@ func (es *executionState) do() {
 		defer wg.Done()
 
 		// Wait for all transports to finish
-		for _, t := range es.transports {
+		for i, t := range es.transports {
 			select {
 			case <-t.Finished():
 			case <-es.ctx.Done():
+				log.Println("ex.ctx.Done()!")
 				es.abort(es.ctx.Err())
-
-				// TODO: pipeWorker error handle
-
+			case err := <-es.consecutiveTransportSet[i].worker.Err():
+				log.Println("consecutiveTransportSet[i].worker.Err()!")
+				if err != nil {
+					es.abort(err)
+				}
 			//case err := <-es.dispatcher.Err():
 			//	if err != nil {
 			//		es.abort(err)
 			//	}
 			}
+			log.Println("t.Finished(): ", t.Label())
 		}
+
+		log.Println("all transports are done")
+
 		// Check for any errors on the dispatcher
 		//err := es.dispatcher.Stop()
 		//if err != nil {
@@ -354,6 +361,7 @@ func (es *executionState) do() {
 	go func() {
 		defer close(es.metaCh)
 		wg.Wait()
+		log.Println("resource wg wait is over")
 	}()
 }
 

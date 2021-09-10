@@ -68,7 +68,7 @@ func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Trans
 		messages: newMessageQueue(64),
 		stack:    n.CallStack(),
 		finished: make(chan struct{}),
-		worker: newPipeWorker(t),
+		worker: newPipeWorker(t, logger),
 	}
 }
 
@@ -283,40 +283,51 @@ PROCESS:
 
 func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table)  {
 
-	if f, err := pipeProcess(ctx, t.worker, t.t, m); err != nil || f {
+	if f, err := pipeProcess(ctx, t.t, m); err != nil || f {
 
 		// err will go to the channel executor.go:336 TODO
 		t.setErr(err)
 
 		if !f {
+			log.Println("consecutiveTransport error: ", err)
 			t.t.Finish(DatasetID{0}, t.err())
 		}
 
 		// close t.finished will close channel in executor.go (case <-t.Finished())
 		close(t.finished)
 
+		// stop pipeWorker
+		t.worker.Stop()
+
 		return
 	}
 
 }
 
-func pipeProcess(ctx context.Context, w *pipeWorker, t Transformation, m flux.Table) (finished bool, err error) {
+func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished bool, err error) {
 
 	if m != nil {
 		log.Println("start pipeProcess: ", t.Label(), m.Key())
 	}
 
 	// table is nil means finish msg
-	// stop pipeworker and clear all data int dataset
+	// 1. if we have next operator , send finishMsg to it
+	// 2. if next operator is res operator, send finishMsg to it too
+	// 3. if we stop pipeworker early, ClearCache may not work because pipeworker is responsible for all these work
+	// 4. so send finishMsg and clear all data in dataset should be early
 	if m == nil {
-		w.Stop()
+
+		// send finishMsg to next operator
+		ConnectOperator(t.Label(), nil)
+
+		// clear cache data of this operator
 		err = t.ClearCache()
 		finished = true
 		return
 	}
 
 	_, span := StartSpanFromContext(ctx, reflect.TypeOf(t).String(), t.Label())
-	t.Process(DatasetID(uuid.Nil), m)
+	err = t.Process(DatasetID(uuid.Nil), m)
 	if span != nil {
 		span.Finish()
 	}
