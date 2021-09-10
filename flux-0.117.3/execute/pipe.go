@@ -23,7 +23,14 @@ func ConnectOperator(name string, b flux.Table) {
 	next := OperatorMap[name]
 	if next == nil {
 		// res handler
-		log.Println("res: ", b.Key())
+		if b != nil {
+			log.Println("res: ", b.Key())
+		}
+		// finishMsg to result operator
+		if b == nil {
+			ResOperator.Finish(DatasetID{0}, nil)
+		}
+		// if b is not nil, just print it
 		ResOperator.Process(DatasetID{0}, b)
 	} else {
 		log.Println("next: ", next.Label())

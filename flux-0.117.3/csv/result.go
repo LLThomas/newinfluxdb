@@ -950,9 +950,6 @@ func (e *ResultEncoder) Encode(w io.Writer, result flux.Result) (int64, error) {
 		if err := tbl.Do(func(cr flux.ColReader) error {
 
 			log.Println("table: ", cr.Len())
-			for i := 0; i < cr.Len(); i++ {
-				log.Println(time.Unix(0, cr.Times(2).Value(i)))
-			}
 
 			record := row[defaultRecordStartIdx:]
 			l := cr.Len()
