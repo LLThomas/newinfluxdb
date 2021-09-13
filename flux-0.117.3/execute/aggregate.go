@@ -7,6 +7,7 @@ import (
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/memory"
 	"github.com/influxdata/flux/plan"
+	"log"
 )
 
 type aggregateTransformation struct {
@@ -199,7 +200,17 @@ func (t *aggregateTransformation) Process(id DatasetID, tbl flux.Table) error {
 		}
 	}
 
-	return AppendKeyValues(tbl.Key(), builder)
+	err := AppendKeyValues(tbl.Key(), builder)
+	b, _ := builder.Table()
+	log.Println("aggregate: ", b.Key())
+	nextOperator := OperatorMap[t.Label()]
+	if nextOperator == nil {
+		ResOperator.Process(DatasetID{0}, b)
+	} else {
+		nextOperator.PushToChannel(b)
+	}
+	//return AppendKeyValues(tbl.Key(), builder)
+	return err
 }
 
 func (t *aggregateTransformation) UpdateWatermark(id DatasetID, mark Time) error {

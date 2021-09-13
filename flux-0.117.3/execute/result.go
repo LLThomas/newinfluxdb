@@ -1,7 +1,6 @@
 package execute
 
 import (
-	"log"
 	"sync"
 
 	"github.com/influxdata/flux"
@@ -105,7 +104,7 @@ func (s *result) Finish(id DatasetID, err error) {
 		case <-s.aborted:
 		}
 	}
-	log.Println("resultFinish")
+	//log.Println("resultFinish")
 	close(s.tables)
 }
 

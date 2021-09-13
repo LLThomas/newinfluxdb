@@ -20,10 +20,6 @@ package control
 import (
 	"context"
 	"fmt"
-	"runtime/debug"
-	"sync"
-	"sync/atomic"
-
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
 	"github.com/influxdata/flux/execute/table"
@@ -40,6 +36,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"log"
+	"runtime/debug"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 // orgLabel is the metric label to use in the controller
@@ -435,7 +436,9 @@ func (c *Controller) processQueryQueue() {
 		case <-c.done:
 			return
 		case q := <-c.queryQueue:
+			tmptime := time.Now()
 			c.executeQuery(q)
+			log.Println("all time: ", time.Now().Sub(tmptime))
 		}
 	}
 }

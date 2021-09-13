@@ -296,7 +296,13 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table) 
 		}
 
 		// send finishMsg to next operator before stop this pipe worker
-		ConnectOperator(t.Label(), nil)
+		//ConnectOperator(t.Label(), nil)
+		nextOperator := OperatorMap[t.Label()]
+		if nextOperator == nil {
+			ResOperator.Finish(DatasetID{0}, nil)
+		} else {
+			nextOperator.PushToChannel(nil)
+		}
 
 		//log.Println("f is true")
 
@@ -322,6 +328,11 @@ func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished 
 	// 3. if we stop pipeworker early, ClearCache may not work because pipeworker is responsible for all these work
 	// 4. so send finishMsg and clear all data in dataset should be early
 	if m == nil {
+
+		log.Println("part1 : ", TimePart1)
+		log.Println("part2 : ", TimePart2)
+		log.Println("part3 : ", TimePart3)
+		log.Println("window time: ", WindowTime)
 
 		// send finishMsg to next operator
 		//ConnectOperator(t.Label(), nil)

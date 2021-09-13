@@ -12,6 +12,7 @@ import (
 	"github.com/influxdata/flux/values"
 	"log"
 	"math"
+	"time"
 )
 
 const WindowKind = "window"
@@ -335,20 +336,18 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 		}
 	}
 
-	lastWindowKey := make([]flux.GroupKey, 1000)
-	lastWindowBound := make([]interval.Bounds, 1000)
+	lastWindowKey := make([]flux.GroupKey, 1500)
+	lastWindowBound := make([]interval.Bounds, 1500)
 	numCount := 0
+
+	nextOperator := execute.OperatorMap[t.Label()]
+	resOperator := execute.ResOperator
 
 	return tbl.Do(func(cr flux.ColReader) error {
 
-		//log.Println("window: ")
-		//log.Println("left bound: ", time.Unix(0, cr.Times(2).Value(0)))
-		//log.Println("right bound:", time.Unix(0, cr.Times(2).Value(l-1)))
+		time1 := time.Now()
 
 		l := cr.Len()
-
-		//log.Println("window cr.Len(): ", l, time.Unix(0, cr.Times(2).Value(0)), time.Unix(0, cr.Times(2).Value(l-1)))
-		//log.Println("numCount: ", numCount)
 
 		if l == 0 {
 			log.Println("l is 0!")
@@ -357,16 +356,15 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 
 		rawDataIndex := 0
 
+		//for i := 0; i < numCount; i++ {
+		//	log.Println("numcount1: ", lastWindowKey[i])
+		//	log.Println("numcount2: ", lastWindowBound[i])
+		//}
+
 		for i := 0; i < numCount; i++ {
-
-			//log.Println("concernNextBlock", rawDataIndex, l, time.Unix(0, values.Time(cr.Times(timeIdx).Value(rawDataIndex)).Time().UnixNano()), time.Unix(0, lastWindowBound[i].Stop().Time().UnixNano()))
-
 			builder, _ := t.cache.TableBuilder(lastWindowKey[i])
 			// add data to window
 			for rawDataIndex < l && values.Time(cr.Times(timeIdx).Value(rawDataIndex)) < lastWindowBound[i].Stop() {
-
-				//log.Println("time: ", time.Unix(0, cr.Times(timeIdx).Value(rawDataIndex)))
-
 				for j, c := range builder.Cols() {
 					switch c.Label {
 					case t.startCol:
@@ -387,41 +385,42 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 				rawDataIndex++
 			}
 			b, _ := builder.Table()
-
-			//if b == nil {
-			//	log.Println("window1")
-			//	os.Exit(0)
-			//}
-			//
-			//log.Println("window send1: ", b.Key())
-
-			//log.Println("window: ", b.Key())
-			execute.ConnectOperator(t.Label(), b)
+			//execute.ConnectOperator(t.Label(), b)
+			if nextOperator == nil {
+				resOperator.Process(execute.DatasetID{0}, b)
+			} else {
+				nextOperator.PushToChannel(b)
+			}
 			rawDataIndex = 0
 		}
 
-		if numCount != 0 {
-			//log.Println("adjust rawDataIndex: ", rawDataIndex, numCount)
-			//log.Println(time.Unix(0, cr.Times(2).Value(0)), time.Unix(0, lastWindowBound[numCount-1].Start().Add(t.w.Every()).Time().UnixNano()))
-			for cr.Times(2).Value(rawDataIndex) < lastWindowBound[numCount-1].Start().Add(t.w.Every()).Time().UnixNano() {
-				rawDataIndex++
-			}
-			//log.Println("adjust rawDataIndex: ", rawDataIndex)
-			numCount = 0
-		}
+		execute.TimePart1 = execute.TimePart1.Add(time.Now().Sub(time1))
 
-		//rightBound := values.Time(t.bounds.Start())
+		//numCount = 0
+		//if numCount != 0 {
+		//	for cr.Times(timeIdx).Value(rawDataIndex) < lastWindowBound[numCount-1].Start().Add(t.w.Every()).Time().UnixNano() {
+		//		rawDataIndex++
+		//	}
+		//}
+
 		var rightBound values.Time
 		var leftBound values.Time
-		if rawDataIndex == 0 {
-			rightBound = values.Time(cr.Times(2).Value(0))
+		if numCount == 0 {
+			rightBound = values.Time(cr.Times(timeIdx).Value(0))
 			leftBound = values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
 		} else {
-			rightBound = values.Time(cr.Times(2).Value(rawDataIndex))
-			leftBound = values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
+
+			leftBound = lastWindowBound[numCount-1].Start()
+			rightBound = lastWindowBound[numCount-1].Stop()
+
+			//rightBound = values.Time(cr.Times(timeIdx).Value(rawDataIndex))
+			//leftBound = values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
 		}
-		//log.Println("leftBound: ", time.Unix(0, leftBound.Time().UnixNano()), "rightBound: ", time.Unix(0, rightBound.Time().UnixNano()))
+		//rightBound := values.Time(cr.Times(2).Value(0))
+		//leftBound := values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
 		tmpLeftBound := leftBound
+		//change := true
+		numCount = 0
 
 		for leftBound.Add(t.w.Every()) < t.bounds.Stop() {
 			// adjust bound
@@ -434,6 +433,13 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 			if rightBound > t.bounds.Stop() {
 				rightBound = t.bounds.Stop()
 			}
+
+			// next leftBound
+			//nextLeftBound := leftBound.Add(t.w.Every())
+			//if nextLeftBound > values.Time(cr.Times(timeIdx).Value(l-1)) {
+			//	change = false
+			//}
+
 			bnds := interval.NewBounds(tmpLeftBound, rightBound)
 			key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
 			builder, created := t.cache.TableBuilder(key)
@@ -452,8 +458,16 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 			if rawDataIndex >= l {
 				break
 			}
+			// optimatize position
+			tmpRawDataIndex := rawDataIndex
+
+			time2 := time.Now()
+
 			// add data to window
 			for rawDataIndex < l && values.Time(cr.Times(timeIdx).Value(rawDataIndex)) < rightBound {
+				//if values.Time(cr.Times(timeIdx).Value(rawDataIndex)) == nextLeftBound {
+				//	tmpRawDataIndex = rawDataIndex
+				//}
 				for j, c := range builder.Cols() {
 					switch c.Label {
 					case t.startCol:
@@ -465,7 +479,6 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 							return err
 						}
 					default:
-						//log.Println(rawDataIndex, "add to bound: ", bnds, execute.ValueForRow(cr, rawDataIndex, j))
 						if err := builder.AppendValue(j, execute.ValueForRow(cr, rawDataIndex, j)); err != nil {
 							return err
 						}
@@ -474,118 +487,36 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 				rawDataIndex++
 			}
 
+			execute.TimePart2 = execute.TimePart2.Add(time.Now().Sub(time2))
+			time3 :=time.Now()
+
 			// if rawDataIndex is over l, we should concern next block
 			if (rawDataIndex < l || (rawDataIndex >= l && cr.Times(timeIdx).Value(l-1) == t.bounds.Stop().Time().UnixNano())) {
 				// send to next operator
 				b, _ := builder.Table()
-
-				//if b == nil {
-				//	log.Println("window2")
-				//	os.Exit(0)
-				//}
-				//
-				//log.Println("window send2: ", b.Key())
-
-				//log.Println("window: ", b.Key())
-				//log.Println("window send")
-				execute.ConnectOperator(t.Label(), b)
+				//execute.ConnectOperator(t.Label(), b)
+				if nextOperator == nil {
+					resOperator.Process(execute.DatasetID{0}, b)
+				} else {
+					nextOperator.PushToChannel(b)
+				}
 			} else if rawDataIndex >= l {
 				lastWindowBound[numCount] = bnds
 				lastWindowKey[numCount] = key
 				numCount++
-				//log.Println("over block: ", bnds, )
 			}
-			rawDataIndex = 0
+
+			execute.TimePart3 = execute.TimePart3.Add(time.Now().Sub(time3))
+
+			//if change {
+			//	rawDataIndex = tmpRawDataIndex
+			//}
+			rawDataIndex = tmpRawDataIndex
 		}
 
-		//log.Println("window is over")
+		execute.WindowTime = execute.WindowTime.Add(time.Now().Sub(time1))
 
 		return nil
-
-		//tm := values.Time(cr.Times(timeIdx).Value(0))
-		//oldBounds := t.getWindowBounds(tm)
-		//bndIndex := len(oldBounds) - 1
-		//bnds := oldBounds[bndIndex]
-		//key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
-		//builder,_ := t.cache.TableBuilder(key)
-		//
-		//count := 0
-		//
-		//for i := 0; i < l; i++ {
-		//
-		//	tm := values.Time(cr.Times(timeIdx).Value(i))
-		//	bounds := t.getWindowBounds(tm)
-		//	bnds = oldBounds[bndIndex]
-		//
-		//	for j := len(bounds)-1; j >= 0; j-- {
-		//		if bounds[j].Start() > oldBounds[len(oldBounds)-1].Start() {
-		//			oldBounds = append([]interval.Bounds{bounds[j]}, oldBounds...)
-		//			bndIndex++
-		//		}
-		//	}
-		//
-		//	log.Println("oldbounds: ", len(oldBounds))
-		//	log.Println("bnds: ", time.Unix(0, bnds.Start().Time().UnixNano()), time.Unix(0, bnds.Stop().Time().UnixNano()))
-		//
-		//	//bnds := oldBounds[bndIndex]
-		//	//key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
-		//	//builder, created := t.cache.TableBuilder(key)
-		//	//if created {
-		//	//	for _, c := range newCols {
-		//	//		_, err := builder.AddCol(c)
-		//	//		if err != nil {
-		//	//			return err
-		//	//		}
-		//	//	}
-		//	//}
-		//
-		//	if !bnds.Contains(tm) {
-		//		log.Println("send")
-		//
-		//		count++
-		//		if count > 0 {
-		//			log.Println("666")
-		//		}
-		//
-		//		// send window to next operator and bndIndex--
-		//		b, _ := builder.Table()
-		//		//log.Println("window table: ", b.Key())
-		//		execute.OperatorMap[t.Label()].PushToChannel(b)
-		//		bndIndex--
-		//	}
-		//
-		//	tmp := bndIndex
-		//	for i, allbnds := range oldBounds {
-		//		if tmp < 0 {
-		//			break
-		//		}
-		//		key = t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
-		//		builder, _ = t.cache.TableBuilder(key)
-		//		for j, c := range builder.Cols() {
-		//			switch c.Label {
-		//			case t.startCol:
-		//				if err := builder.AppendTime(startColIdx, allbnds.Start()); err != nil {
-		//					return err
-		//				}
-		//			case t.stopCol:
-		//				if err := builder.AppendTime(stopColIdx, allbnds.Stop()); err != nil {
-		//					return err
-		//				}
-		//			default:
-		//				log.Println(i, "add to bound: ", allbnds, execute.ValueForRow(cr, i, j))
-		//				if err := builder.AppendValue(j, execute.ValueForRow(cr, i, j)); err != nil {
-		//					return err
-		//				}
-		//			}
-		//		}
-		//		tmp--
-		//	}
-		//
-		//	//log.Println(" time: ", time.Unix(0, cr.Times(timeIdx).Value(i)))
-		//
-		//}
-
-		//return nil
 
 		//l := cr.Len()
 		//

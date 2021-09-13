@@ -11,45 +11,33 @@ import (
 	"log"
 	"runtime/debug"
 	"sync"
+	"time"
 )
 
 var OperatorMap map[string]*consecutiveTransport = make(map[string]*consecutiveTransport, 10)
 var ResOperator Transformation
 
-var count int = 0
+var WindowTime time.Time
+var TimePart1 time.Time
+var TimePart2 time.Time
+var TimePart3 time.Time
 
-func ConnectOperator(name string, b flux.Table) {
-
-	//log.Println("ConnectOperator: ")
-
-	next := OperatorMap[name]
-	if next == nil {
-		// res handler
-		//if b != nil {
-		//	log.Println("res: ", b.Key())
-		//}
-		// finishMsg to result operator
-		if b == nil {
-			//log.Println("connectOperator finishMsg: ", name)
-			ResOperator.Finish(DatasetID{0}, nil)
-			//count = 1
-		} else {
-			// if b is not nil, just print it
-			ResOperator.Process(DatasetID{0}, b)
-		}
-		//if count == 1 {
-		//	log.Println("count is 1: ", name)
-		//	log.Println(b.Key())
-		//	log.Println("break")
-		//}
-		//log.Println("name: ", name)
-		//// if b is not nil, just print it
-		//ResOperator.Process(DatasetID{0}, b)
-	} else {
-		//log.Println("next: ", next.Label())
-		next.PushToChannel(b)
-	}
-}
+//func ConnectOperator(name string, b flux.Table) {
+//
+//	//log.Println("ConnectOperator: ")
+//
+//	next := OperatorMap[name]
+//	if next == nil {
+//		if b == nil {
+//			ResOperator.Finish(DatasetID{0}, nil)
+//		} else {
+//			// if b is not nil, just print it
+//			ResOperator.Process(DatasetID{0}, b)
+//		}
+//	} else {
+//		next.PushToChannel(b)
+//	}
+//}
 
 type pipeWorker struct {
 
@@ -84,7 +72,7 @@ func (p *pipeWorker) Start(ct *consecutiveTransport, ctx context.Context)  {
 		defer p.wg.Done()
 		defer func() {
 			// no error handler , no //case err := <-es.dispatcher.Err(): in executor.go: TODO
-			log.Println("pipe worker finished")
+			//log.Println("pipe worker finished")
 			if e := recover(); e != nil {
 				log.Println("pipe worker error: ", e)
 				err, ok := e.(error)
@@ -126,7 +114,7 @@ func (p *pipeWorker) setErr(err error) {
 
 func (p *pipeWorker) Stop() error {
 
-	log.Println("stop pipeWorker")
+	//log.Println("stop pipeWorker")
 
 	// Check if this is the first time invoking this method.
 	p.mu.Lock()
@@ -151,13 +139,13 @@ func (p *pipeWorker) run(ct *consecutiveTransport,ctx context.Context)  {
 	for  {
 		select {
 		case <-ctx.Done():
-			log.Println("ctx.Done()")
+			//log.Println("ctx.Done()")
 			return
 		case <-p.closing:
-			log.Println("p.closing")
+			//log.Println("p.closing")
 			return
 		case msg := <- p.message:
-			log.Println("pipeWorker msg")
+			//log.Println("pipeWorker msg")
 			ct.pipeProcesses(ctx, msg)
 		}
 	}
