@@ -334,10 +334,10 @@ func (es *executionState) do() {
 			select {
 			case <-t.Finished():
 			case <-es.ctx.Done():
-				log.Println("ex.ctx.Done()!")
+				//log.Println("ex.ctx.Done()!")
 				es.abort(es.ctx.Err())
 			case err := <-es.consecutiveTransportSet[i].worker.Err():
-				log.Println("consecutiveTransportSet[i].worker.Err()!")
+				//log.Println("consecutiveTransportSet[i].worker.Err()!")
 				if err != nil {
 					es.abort(err)
 				}
@@ -346,7 +346,13 @@ func (es *executionState) do() {
 			//		es.abort(err)
 			//	}
 			}
-			log.Println("t.Finished(): ", t.Label())
+			// stop pipe worker
+			//log.Println("t.Finished(), pipeWorker Stop()")
+			err := es.consecutiveTransportSet[i].worker.Stop()
+			if err != nil {
+				es.abort(err)
+			}
+			//log.Println("t.Finished(): ", t.Label())
 		}
 
 		log.Println("all transports are done")
@@ -361,7 +367,7 @@ func (es *executionState) do() {
 	go func() {
 		defer close(es.metaCh)
 		wg.Wait()
-		log.Println("resource wg wait is over")
+		//log.Println("resource wg wait is over")
 	}()
 }
 

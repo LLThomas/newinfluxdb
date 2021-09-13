@@ -285,6 +285,8 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table) 
 
 	if f, err := pipeProcess(ctx, t.t, m); err != nil || f {
 
+		//log.Println("f or err: ", f, err)
+
 		// err will go to the channel executor.go:336 TODO
 		t.setErr(err)
 
@@ -293,11 +295,13 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table) 
 			t.t.Finish(DatasetID{0}, t.err())
 		}
 
+		// send finishMsg to next operator before stop this pipe worker
+		ConnectOperator(t.Label(), nil)
+
+		//log.Println("f is true")
+
 		// close t.finished will close channel in executor.go (case <-t.Finished())
 		close(t.finished)
-
-		// stop pipeWorker
-		t.worker.Stop()
 
 		return
 	}
@@ -306,9 +310,11 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table) 
 
 func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished bool, err error) {
 
-	if m != nil {
-		log.Println("start pipeProcess: ", t.Label(), m.Key())
-	}
+	//if m != nil {
+	//	log.Println("start pipeProcess: ", t.Label(), m.Key())
+	//} else {
+	//	log.Println("start pipeProcess: finish table flag", t.Label())
+	//}
 
 	// table is nil means finish msg
 	// 1. if we have next operator , send finishMsg to it
@@ -318,7 +324,9 @@ func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished 
 	if m == nil {
 
 		// send finishMsg to next operator
-		ConnectOperator(t.Label(), nil)
+		//ConnectOperator(t.Label(), nil)
+
+		//log.Println("m is null, clear cache data")
 
 		// clear cache data of this operator
 		err = t.ClearCache()

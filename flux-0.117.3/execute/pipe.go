@@ -16,24 +16,37 @@ import (
 var OperatorMap map[string]*consecutiveTransport = make(map[string]*consecutiveTransport, 10)
 var ResOperator Transformation
 
+var count int = 0
+
 func ConnectOperator(name string, b flux.Table) {
 
-	log.Println("ConnectOperator: ")
+	//log.Println("ConnectOperator: ")
 
 	next := OperatorMap[name]
 	if next == nil {
 		// res handler
-		if b != nil {
-			log.Println("res: ", b.Key())
-		}
+		//if b != nil {
+		//	log.Println("res: ", b.Key())
+		//}
 		// finishMsg to result operator
 		if b == nil {
+			//log.Println("connectOperator finishMsg: ", name)
 			ResOperator.Finish(DatasetID{0}, nil)
+			//count = 1
+		} else {
+			// if b is not nil, just print it
+			ResOperator.Process(DatasetID{0}, b)
 		}
-		// if b is not nil, just print it
-		ResOperator.Process(DatasetID{0}, b)
+		//if count == 1 {
+		//	log.Println("count is 1: ", name)
+		//	log.Println(b.Key())
+		//	log.Println("break")
+		//}
+		//log.Println("name: ", name)
+		//// if b is not nil, just print it
+		//ResOperator.Process(DatasetID{0}, b)
 	} else {
-		log.Println("next: ", next.Label())
+		//log.Println("next: ", next.Label())
 		next.PushToChannel(b)
 	}
 }
@@ -44,6 +57,7 @@ type pipeWorker struct {
 	t 		Transformation
 	closed  bool
 	closing chan struct{}
+	wg 		sync.WaitGroup
 
 	ctx 	context.Context
 	mu 		sync.Mutex
@@ -55,17 +69,19 @@ type pipeWorker struct {
 
 func newPipeWorker(t Transformation, logger *zap.Logger) *pipeWorker {
 	return &pipeWorker{
-		// size of buffered channel is 10 temporarily
-		message: make(chan flux.Table, 64),
+		message: make(chan flux.Table, 100),
 		t: t,
 		closed: false,
 		closing: make(chan struct{}),
-		logger: logger,
+		errC: make(chan error, 1),
+		logger: logger.With(zap.String("component", "pipeWorker")),
 	}
 }
 
 func (p *pipeWorker) Start(ct *consecutiveTransport, ctx context.Context)  {
+	p.wg.Add(1)
 	go func() {
+		defer p.wg.Done()
 		defer func() {
 			// no error handler , no //case err := <-es.dispatcher.Err(): in executor.go: TODO
 			log.Println("pipe worker finished")
@@ -109,6 +125,9 @@ func (p *pipeWorker) setErr(err error) {
 }
 
 func (p *pipeWorker) Stop() error {
+
+	log.Println("stop pipeWorker")
+
 	// Check if this is the first time invoking this method.
 	p.mu.Lock()
 	if !p.closed {
@@ -119,19 +138,26 @@ func (p *pipeWorker) Stop() error {
 	}
 	p.mu.Unlock()
 
-	log.Println("stop pipeWorker")
+	// Wait for the existing workers to finish.
+	p.wg.Wait()
 
-	return nil
+	// Grab the error from within a lock.
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.err
 }
 
 func (p *pipeWorker) run(ct *consecutiveTransport,ctx context.Context)  {
 	for  {
 		select {
 		case <-ctx.Done():
+			log.Println("ctx.Done()")
 			return
 		case <-p.closing:
+			log.Println("p.closing")
 			return
 		case msg := <- p.message:
+			log.Println("pipeWorker msg")
 			ct.pipeProcesses(ctx, msg)
 		}
 	}

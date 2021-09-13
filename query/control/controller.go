@@ -20,7 +20,6 @@ package control
 import (
 	"context"
 	"fmt"
-	"log"
 	"runtime/debug"
 	"sync"
 	"sync/atomic"
@@ -485,7 +484,7 @@ func (c *Controller) executeQuery(q *Query) {
 	}
 	q.exec = exec
 	q.pump(exec, ctx.Done())
-	log.Println("q.pump!")
+	//log.Println("q.pump!")
 }
 
 // waitForQuery will wait until the query is done.
