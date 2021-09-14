@@ -7,7 +7,6 @@ import (
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/memory"
 	"github.com/influxdata/flux/plan"
-	"log"
 )
 
 type aggregateTransformation struct {
@@ -20,7 +19,7 @@ type aggregateTransformation struct {
 }
 
 func (t *aggregateTransformation) ClearCache() error {
-	panic("implement me")
+	return t.d.ClearCache()
 }
 
 type AggregateConfig struct {
@@ -202,7 +201,7 @@ func (t *aggregateTransformation) Process(id DatasetID, tbl flux.Table) error {
 
 	err := AppendKeyValues(tbl.Key(), builder)
 	b, _ := builder.Table()
-	log.Println("aggregate: ", b.Key())
+	//log.Println("aggregate: ", b.Key())
 	nextOperator := OperatorMap[t.Label()]
 	if nextOperator == nil {
 		ResOperator.Process(DatasetID{0}, b)

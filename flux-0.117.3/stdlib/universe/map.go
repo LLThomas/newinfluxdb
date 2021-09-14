@@ -2,6 +2,7 @@ package universe
 
 import (
 	"context"
+	"log"
 	"sort"
 
 	"github.com/influxdata/flux"
@@ -121,7 +122,7 @@ type mapTransformation struct {
 }
 
 func (t *mapTransformation) ClearCache() error {
-	panic("implement me")
+	return t.ClearCache()
 }
 
 func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, d execute.Dataset, cache execute.TableBuilderCache) (*mapTransformation, error) {
@@ -154,6 +155,10 @@ func (t *mapTransformation) Process(id execute.DatasetID, tbl flux.Table) error 
 
 	var on map[string]bool
 	return tbl.Do(func(cr flux.ColReader) error {
+
+		var builder execute.TableBuilder
+		var created bool = false
+
 		l := cr.Len()
 		for i := 0; i < l; i++ {
 			m, err := fn.Eval(t.ctx, i, cr)
@@ -171,7 +176,7 @@ func (t *mapTransformation) Process(id execute.DatasetID, tbl flux.Table) error 
 			}
 
 			key := groupKeyForObject(i, cr, m, on)
-			builder, created := t.cache.TableBuilder(key)
+			builder, created = t.cache.TableBuilder(key)
 			if created {
 				if err := t.createSchema(fn, builder, m); err != nil {
 					return err
@@ -198,6 +203,10 @@ func (t *mapTransformation) Process(id execute.DatasetID, tbl flux.Table) error 
 				}
 			}
 		}
+
+		b, _ := builder.Table()
+		log.Println("map: ", b.Key())
+
 		return nil
 	})
 }

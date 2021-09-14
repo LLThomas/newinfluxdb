@@ -12,7 +12,6 @@ import (
 	"github.com/influxdata/flux/values"
 	"log"
 	"math"
-	"time"
 )
 
 const WindowKind = "window"
@@ -336,31 +335,24 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 		}
 	}
 
+	// for over block data
 	lastWindowKey := make([]flux.GroupKey, 1500)
 	lastWindowBound := make([]interval.Bounds, 1500)
 	numCount := 0
 
+	// for send data
 	nextOperator := execute.OperatorMap[t.Label()]
 	resOperator := execute.ResOperator
 
 	return tbl.Do(func(cr flux.ColReader) error {
 
-		time1 := time.Now()
-
 		l := cr.Len()
-
 		if l == 0 {
 			log.Println("l is 0!")
 			return nil
 		}
 
 		rawDataIndex := 0
-
-		//for i := 0; i < numCount; i++ {
-		//	log.Println("numcount1: ", lastWindowKey[i])
-		//	log.Println("numcount2: ", lastWindowBound[i])
-		//}
-
 		for i := 0; i < numCount; i++ {
 			builder, _ := t.cache.TableBuilder(lastWindowKey[i])
 			// add data to window
@@ -376,7 +368,6 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 							return err
 						}
 					default:
-						//log.Println(rawDataIndex, "add to bound: ", bnds, execute.ValueForRow(cr, rawDataIndex, j))
 						if err := builder.AppendValue(j, execute.ValueForRow(cr, rawDataIndex, j)); err != nil {
 							return err
 						}
@@ -385,7 +376,6 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 				rawDataIndex++
 			}
 			b, _ := builder.Table()
-			//execute.ConnectOperator(t.Label(), b)
 			if nextOperator == nil {
 				resOperator.Process(execute.DatasetID{0}, b)
 			} else {
@@ -394,32 +384,17 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 			rawDataIndex = 0
 		}
 
-		execute.TimePart1 = execute.TimePart1.Add(time.Now().Sub(time1))
-
-		//numCount = 0
-		//if numCount != 0 {
-		//	for cr.Times(timeIdx).Value(rawDataIndex) < lastWindowBound[numCount-1].Start().Add(t.w.Every()).Time().UnixNano() {
-		//		rawDataIndex++
-		//	}
-		//}
-
 		var rightBound values.Time
 		var leftBound values.Time
 		if numCount == 0 {
 			rightBound = values.Time(cr.Times(timeIdx).Value(0))
 			leftBound = values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
 		} else {
-
 			leftBound = lastWindowBound[numCount-1].Start()
 			rightBound = lastWindowBound[numCount-1].Stop()
-
-			//rightBound = values.Time(cr.Times(timeIdx).Value(rawDataIndex))
-			//leftBound = values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
 		}
-		//rightBound := values.Time(cr.Times(2).Value(0))
-		//leftBound := values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
 		tmpLeftBound := leftBound
-		//change := true
+		// reset numCount
 		numCount = 0
 
 		for leftBound.Add(t.w.Every()) < t.bounds.Stop() {
@@ -433,12 +408,6 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 			if rightBound > t.bounds.Stop() {
 				rightBound = t.bounds.Stop()
 			}
-
-			// next leftBound
-			//nextLeftBound := leftBound.Add(t.w.Every())
-			//if nextLeftBound > values.Time(cr.Times(timeIdx).Value(l-1)) {
-			//	change = false
-			//}
 
 			bnds := interval.NewBounds(tmpLeftBound, rightBound)
 			key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
@@ -460,14 +429,8 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 			}
 			// optimatize position
 			tmpRawDataIndex := rawDataIndex
-
-			time2 := time.Now()
-
 			// add data to window
 			for rawDataIndex < l && values.Time(cr.Times(timeIdx).Value(rawDataIndex)) < rightBound {
-				//if values.Time(cr.Times(timeIdx).Value(rawDataIndex)) == nextLeftBound {
-				//	tmpRawDataIndex = rawDataIndex
-				//}
 				for j, c := range builder.Cols() {
 					switch c.Label {
 					case t.startCol:
@@ -486,15 +449,10 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 				}
 				rawDataIndex++
 			}
-
-			execute.TimePart2 = execute.TimePart2.Add(time.Now().Sub(time2))
-			time3 :=time.Now()
-
 			// if rawDataIndex is over l, we should concern next block
 			if (rawDataIndex < l || (rawDataIndex >= l && cr.Times(timeIdx).Value(l-1) == t.bounds.Stop().Time().UnixNano())) {
 				// send to next operator
 				b, _ := builder.Table()
-				//execute.ConnectOperator(t.Label(), b)
 				if nextOperator == nil {
 					resOperator.Process(execute.DatasetID{0}, b)
 				} else {
@@ -505,17 +463,8 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 				lastWindowKey[numCount] = key
 				numCount++
 			}
-
-			execute.TimePart3 = execute.TimePart3.Add(time.Now().Sub(time3))
-
-			//if change {
-			//	rawDataIndex = tmpRawDataIndex
-			//}
 			rawDataIndex = tmpRawDataIndex
 		}
-
-		execute.WindowTime = execute.WindowTime.Add(time.Now().Sub(time1))
-
 		return nil
 
 		//l := cr.Len()
