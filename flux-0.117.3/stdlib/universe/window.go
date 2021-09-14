@@ -348,7 +348,7 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 
 		l := cr.Len()
 		if l == 0 {
-			log.Println("l is 0!")
+			log.Println("window l is 0!")
 			return nil
 		}
 
@@ -394,6 +394,8 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 			rightBound = lastWindowBound[numCount-1].Stop()
 		}
 		tmpLeftBound := leftBound
+		// for bounds stop data
+		concernBoundsStop := false
 		// reset numCount
 		numCount = 0
 
@@ -407,8 +409,8 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 			rightBound = rightBound.Add(t.w.Every())
 			if rightBound > t.bounds.Stop() {
 				rightBound = t.bounds.Stop()
+				concernBoundsStop = true
 			}
-
 			bnds := interval.NewBounds(tmpLeftBound, rightBound)
 			key := t.newWindowGroupKey(tbl, keyCols, bnds, keyColMap)
 			builder, created := t.cache.TableBuilder(key)
@@ -450,7 +452,9 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 				rawDataIndex++
 			}
 			// if rawDataIndex is over l, we should concern next block
-			if (rawDataIndex < l || (rawDataIndex >= l && cr.Times(timeIdx).Value(l-1) == t.bounds.Stop().Time().UnixNano())) {
+			if rawDataIndex < l || (rawDataIndex >= l && concernBoundsStop) {
+				// reset concernBoundsStop
+				concernBoundsStop = false
 				// send to next operator
 				b, _ := builder.Table()
 				if nextOperator == nil {

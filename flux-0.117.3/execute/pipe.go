@@ -11,33 +11,10 @@ import (
 	"log"
 	"runtime/debug"
 	"sync"
-	"time"
 )
 
 var OperatorMap map[string]*consecutiveTransport = make(map[string]*consecutiveTransport, 10)
 var ResOperator Transformation
-
-var WindowTime time.Time
-var TimePart1 time.Time
-var TimePart2 time.Time
-var TimePart3 time.Time
-
-//func ConnectOperator(name string, b flux.Table) {
-//
-//	//log.Println("ConnectOperator: ")
-//
-//	next := OperatorMap[name]
-//	if next == nil {
-//		if b == nil {
-//			ResOperator.Finish(DatasetID{0}, nil)
-//		} else {
-//			// if b is not nil, just print it
-//			ResOperator.Process(DatasetID{0}, b)
-//		}
-//	} else {
-//		next.PushToChannel(b)
-//	}
-//}
 
 type pipeWorker struct {
 

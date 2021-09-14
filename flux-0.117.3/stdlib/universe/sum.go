@@ -175,19 +175,9 @@ type SumFloatAgg struct {
 }
 
 func (a *SumFloatAgg) DoFloat(vs *array.Float64) {
-
-	//log.Println("SumFloatAgg")
-
-	//for i := 0; i < vs.Len(); i++ {
-	//	log.Println(vs.Value(i))
-	//}
-
 	if l := vs.Len() - vs.NullN(); l > 0 {
 		if vs.NullN() == 0 {
 			a.sum += math.Float64.Sum(vs)
-
-			//log.Println("sum: ", a.sum)
-
 			a.ok = true
 		} else {
 			for i := 0; i < vs.Len(); i++ {

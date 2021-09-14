@@ -326,13 +326,8 @@ func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished 
 	// 1. if we have next operator , send finishMsg to it
 	// 2. if next operator is res operator, send finishMsg to it too
 	// 3. if we stop pipeworker early, ClearCache may not work because pipeworker is responsible for all these work
-	// 4. so send finishMsg and clear all data in dataset should be early
+	// 4. so send finishMsg and clear all data in dataset should be done early
 	if m == nil {
-
-		log.Println("part1 : ", TimePart1)
-		log.Println("part2 : ", TimePart2)
-		log.Println("part3 : ", TimePart3)
-		log.Println("window time: ", WindowTime)
 
 		// send finishMsg to next operator
 		//ConnectOperator(t.Label(), nil)
