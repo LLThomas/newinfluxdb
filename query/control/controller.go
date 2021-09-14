@@ -436,9 +436,9 @@ func (c *Controller) processQueryQueue() {
 		case <-c.done:
 			return
 		case q := <-c.queryQueue:
-			tmptime := time.Now()
+			tmpTime := time.Now()
 			c.executeQuery(q)
-			log.Println("all time: ", time.Now().Sub(tmptime))
+			log.Println("all time: ", time.Now().Sub(tmpTime))
 		}
 	}
 }

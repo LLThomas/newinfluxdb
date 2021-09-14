@@ -6,6 +6,7 @@ import (
 	"github.com/gofrs/uuid"
 	"log"
 	"reflect"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -329,13 +330,12 @@ func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished 
 	// 4. so send finishMsg and clear all data in dataset should be done early
 	if m == nil {
 
-		// send finishMsg to next operator
-		//ConnectOperator(t.Label(), nil)
-
-		//log.Println("m is null, clear cache data")
-
+		// TODO: sometimes this will break the system (bug)
 		// clear cache data of this operator
-		err = t.ClearCache()
+		if !strings.Contains(t.Label(), "map") {
+			err = t.ClearCache()
+		}
+
 		finished = true
 		return
 	}

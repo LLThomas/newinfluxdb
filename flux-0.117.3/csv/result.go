@@ -951,7 +951,7 @@ func (e *ResultEncoder) Encode(w io.Writer, result flux.Result) (int64, error) {
 			//log.Println("csv/result: ",cr.Key())
 			//log.Println(cr.Len())
 			//for i := 0; i < cr.Len(); i++ {
-			//	log.Println(time.Unix(0, values.Time(cr.Times(2).Value(i)).Time().UnixNano()))
+			//	log.Println(time.Unix(0, values.Time(cr.Times(4).Value(i)).Time().UnixNano()))
 			//}
 
 			record := row[defaultRecordStartIdx:]

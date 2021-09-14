@@ -355,7 +355,7 @@ func (es *executionState) do() {
 			//log.Println("t.Finished(): ", t.Label())
 		}
 
-		//log.Println("all transports are done")
+		log.Println("all transports are done")
 
 		// Check for any errors on the dispatcher
 		//err := es.dispatcher.Stop()

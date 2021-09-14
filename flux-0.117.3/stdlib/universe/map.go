@@ -2,7 +2,6 @@ package universe
 
 import (
 	"context"
-	"log"
 	"sort"
 
 	"github.com/influxdata/flux"
@@ -204,9 +203,15 @@ func (t *mapTransformation) Process(id execute.DatasetID, tbl flux.Table) error 
 			}
 		}
 
-		b, _ := builder.Table()
-		log.Println("map: ", b.Key())
 
+		b, _ := builder.Table()
+		//log.Println("map: ", b.Key())
+		nextOperator := execute.OperatorMap[t.Label()]
+		if nextOperator == nil {
+			execute.ResOperator.Process(execute.DatasetID{0}, b)
+		} else {
+			nextOperator.PushToChannel(b)
+		}
 		return nil
 	})
 }
