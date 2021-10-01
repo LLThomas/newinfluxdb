@@ -157,6 +157,9 @@ func (l *Lookup) Clear() {
 // be found or inserted. If no suitable group can be found, then this will return -1
 // which indicates that a group has to be created at index 0.
 func (l *Lookup) lookupGroup(key flux.GroupKey) int {
+
+	//log.Println("lookup: ", l.lastIndex, l.nextID, key.String())
+
 	if l.lastIndex >= 0 {
 		kg := l.groups[l.lastIndex]
 		if !key.Less(kg.First()) {

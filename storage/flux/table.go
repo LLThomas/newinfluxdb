@@ -4,6 +4,7 @@ package storageflux
 
 import (
 	"errors"
+	"log"
 	"sync/atomic"
 
 	"github.com/apache/arrow/go/arrow/array"
@@ -80,7 +81,12 @@ func (t *table) do(f func(flux.ColReader) error, advance func() bool) error {
 	if !atomic.CompareAndSwapInt32(&t.used, 0, 1) {
 		return errors.New("table already used")
 	}
-	defer t.closeDone()
+	//defer t.closeDone()
+	defer func() {
+		t.closeDone()
+		execute.WG.Done()
+		log.Println("table.go: ", t.key.String(), " call Done ")
+	}()
 
 	// If an error occurred during initialization, that is
 	// returned here.

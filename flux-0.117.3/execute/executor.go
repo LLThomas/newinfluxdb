@@ -4,6 +4,7 @@ package execute
 import (
 	"context"
 	"fmt"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"log"
 	"reflect"
 	"runtime/debug"
@@ -71,6 +72,14 @@ type executionState struct {
 	logger     *zap.Logger
 
 	consecutiveTransportSet []*consecutiveTransport
+
+	// set the number of pipeline to 6 which equals to the number of cores
+	// each pipeline has a set of pipe workers
+	ESmultiThreadPipeLine []*MultiThreadPipeLine
+
+	// number of finish operator
+	// when the sum is equal to the number of thread, result operator should be shut down
+	numMsgCount []int32
 }
 
 func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocator) (map[string]flux.Result, <-chan metadata.Metadata, error) {
@@ -79,22 +88,35 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 		return nil, nil, errors.Wrap(err, codes.Inherit, "failed to initialize execute state")
 	}
 
-	// start transformer operator pipe worker
+	log.Println("number of pipeline: ", len(es.ESmultiThreadPipeLine))
+	log.Println("number of operator in each pipeline: ", len(es.ESmultiThreadPipeLine[0].Worker))
+	// construct global operators line
 	n := len(es.consecutiveTransportSet)
-	log.Println("number of pipe workers: ", n)
 	for i := 0; i < n; i++ {
 		e := es.consecutiveTransportSet[i]
+		OperatorIndex[e.Label()] = i
 		if i+1 < n {
-			OperatorMap[e.Label()] = es.consecutiveTransportSet[i+1]
+			OperatorMap[e.Label()] = e
+			log.Println(OperatorMap[e.Label()].Label())
 		} else {
 			OperatorMap[e.Label()] = nil
 		}
-		log.Println("start worker: ", e.Label())
-		e.startPipeWorker(es.ctx)
 	}
 
-	//log.Println("consecutiveTransportSet: ", es.consecutiveTransportSet)
-	//log.Println("OperatorMap: ", len(OperatorMap), OperatorMap)
+	//for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
+	//	for j := 0; j < len(es.ESmultiThreadPipeLine[i].Worker); j++ {
+	//		log.Printf("Execute: %s %p ", es.ESmultiThreadPipeLine[i].Worker[j].t.Label(), es.ESmultiThreadPipeLine[i].Worker[j].t)
+	//	}
+	//}
+
+	// start pipe worker in each pipeline
+	for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
+		es.ESmultiThreadPipeLine[i].startPipeLine(ctx)
+	}
+
+	// for put series key into executionState.multiPipeLine, set es to global ExecutionState in multi_thread_pipe.go
+	// TODO: this is a bad idea, find elegant approach to solve it
+	ExecutionState = es
 
 	es.do()
 	return es.results, es.metaCh, nil
@@ -121,9 +143,18 @@ func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *me
 		resources: p.Resources,
 		results:   make(map[string]flux.Result),
 		// TODO(nathanielc): Have the planner specify the dispatcher throughput
-		dispatcher: newPoolDispatcher(10, e.logger),
-		logger:     e.logger,
+		dispatcher:            newPoolDispatcher(10, e.logger),
+		logger:                e.logger,
+		// assume that number of thread is equal to the number of cores
+		ESmultiThreadPipeLine: make([]*MultiThreadPipeLine, 6),
+		// assume that number of operators is 10
+		numMsgCount: make([]int32, 10),
 	}
+
+	for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
+		es.ESmultiThreadPipeLine[i] = newMultiPipeLine(make([]cursors.Cursor, 0), make([]cursors.Cursor, 3), make([]*consecutiveTransport, 0))
+	}
+
 	v := &createExecutionNodeVisitor{
 		es:    es,
 		nodes: make(map[plan.Node]Node),
@@ -257,10 +288,33 @@ func (v *createExecutionNodeVisitor) Visit(node plan.Node) error {
 		for _, p := range nonYieldPredecessors(node) {
 			executionNode := v.nodes[p]
 			transport := newConsecutiveTransport(v.es.ctx, v.es.dispatcher, tr, node, v.es.logger)
+
 			v.es.transports = append(v.es.transports, transport)
 			executionNode.AddTransformation(transport)
 
 			v.es.consecutiveTransportSet = append(v.es.consecutiveTransportSet, transport)
+			// add transport to each pipeline
+			for i := 0; i < len(v.es.ESmultiThreadPipeLine); i++ {
+
+				newtr, newds, newerr := createTransformationFn(id, DiscardingMode, spec, ec)
+				if newerr != nil {
+					return err
+				}
+				if newds, ok := newds.(DatasetContext); ok {
+					newds.WithContext(v.es.ctx)
+				}
+				newtr.SetLabel(string(node.ID()))
+				if ppn.TriggerSpec == nil {
+					ppn.TriggerSpec = plan.DefaultTriggerSpec
+				}
+				newds.SetTriggerSpec(ppn.TriggerSpec)
+
+				t := newConsecutiveTransport(v.es.ctx, v.es.dispatcher, newtr, node, v.es.logger)
+
+				//log.Printf("newConsecutiveTransport: %p\n", t.t)
+
+				v.es.ESmultiThreadPipeLine[i].Worker = append(v.es.ESmultiThreadPipeLine[i].Worker, t)
+			}
 
 		}
 
@@ -330,44 +384,50 @@ func (es *executionState) do() {
 		defer wg.Done()
 
 		// Wait for all transports to finish
-		for i, t := range es.transports {
-			select {
-			case <-t.Finished():
-			case <-es.ctx.Done():
-				//log.Println("ex.ctx.Done()!")
-				es.abort(es.ctx.Err())
-			case err := <-es.consecutiveTransportSet[i].worker.Err():
-				//log.Println("consecutiveTransportSet[i].worker.Err()!")
-				if err != nil {
-					es.abort(err)
-				}
-			//case err := <-es.dispatcher.Err():
-			//	if err != nil {
-			//		es.abort(err)
-			//	}
-			}
-			// stop pipe worker
-			//log.Println("t.Finished(), pipeWorker Stop()")
-			err := es.consecutiveTransportSet[i].worker.Stop()
-			if err != nil {
-				es.abort(err)
-			}
-			//log.Println("t.Finished(): ", t.Label())
-		}
-
-		log.Println("all transports are done")
-
-		// Check for any errors on the dispatcher
+		//for _, t := range es.transports {
+		//	select {
+		//	case <-t.Finished():
+		//	case <-es.ctx.Done():
+		//		es.abort(es.ctx.Err())
+		//	case err := <-es.dispatcher.Err():
+		//		if err != nil {
+		//			es.abort(err)
+		//		}
+		//	}
+		//}
+		//// Check for any errors on the dispatcher
 		//err := es.dispatcher.Stop()
 		//if err != nil {
 		//	es.abort(err)
 		//}
+
+		// Wait for all transports to finish
+		for i := 0; i < len(es.transports); i++ {
+			// wait for the end of one kind operator in all pipeline threads
+			for j := 0; j < len(es.ESmultiThreadPipeLine); j++ {
+				select {
+				case <-es.ESmultiThreadPipeLine[j].Worker[i].Finished():
+					//log.Println(es.ESmultiThreadPipeLine[j].Worker[i].Label(), " in pipe ", j, " Finished()")
+				case <-es.ctx.Done():
+					//log.Println("ex.ctx.Done()!")
+					es.abort(es.ctx.Err())
+				case err := <-es.ESmultiThreadPipeLine[j].Worker[i].worker.Err():
+					if err != nil {
+						es.abort(err)
+					}
+				}
+			}
+			// stop pipe worker
+			StopAllOperatorThread(i)
+		}
+
+		//log.Println("all transports are done")
+
 	}()
 
 	go func() {
 		defer close(es.metaCh)
 		wg.Wait()
-		//log.Println("resource wg wait is over")
 	}()
 }
 

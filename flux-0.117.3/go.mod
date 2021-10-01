@@ -59,4 +59,7 @@ require (
 	golang.org/x/tools v0.0.0-20200721032237-77f530d86f9a
 	gonum.org/v1/gonum v0.8.2
 	google.golang.org/api v0.17.0
+	github.com/influxdata/influxdb/v2 v2.0.7
 )
+
+replace github.com/influxdata/influxdb/v2 v2.0.7 => ../../newinfluxdb

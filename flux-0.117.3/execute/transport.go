@@ -206,6 +206,9 @@ func (t *consecutiveTransport) Finish(id DatasetID, err error) {
 	//	srcMessage: srcMessage(id),
 	//	err:        err,
 	//})
+
+	//log.Println("finishMsg: ", t.Label())
+
 	t.worker.message <- nil
 }
 
@@ -300,12 +303,16 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table) 
 		//ConnectOperator(t.Label(), nil)
 		nextOperator := OperatorMap[t.Label()]
 		if nextOperator == nil {
-			ResOperator.Finish(DatasetID{0}, nil)
+			atomic.AddInt32(&ExecutionState.numMsgCount[len(ExecutionState.ESmultiThreadPipeLine)], 1)
+
+			//log.Println("pipeprocess finish: ", atomic.LoadInt32(&ExecutionState.numMsgCount[len(ExecutionState.ESmultiThreadPipeLine)]))
+
+			if int(atomic.LoadInt32(&ExecutionState.numMsgCount[len(ExecutionState.ESmultiThreadPipeLine)])) == len(ExecutionState.ESmultiThreadPipeLine) {
+				ResOperator.Finish(DatasetID{0}, nil)
+			}
 		} else {
 			nextOperator.PushToChannel(nil)
 		}
-
-		//log.Println("f is true")
 
 		// close t.finished will close channel in executor.go (case <-t.Finished())
 		close(t.finished)
@@ -316,12 +323,6 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table) 
 }
 
 func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished bool, err error) {
-
-	//if m != nil {
-	//	log.Println("start pipeProcess: ", t.Label(), m.Key())
-	//} else {
-	//	log.Println("start pipeProcess: finish table flag", t.Label())
-	//}
 
 	// table is nil means finish msg
 	// 1. if we have next operator , send finishMsg to it

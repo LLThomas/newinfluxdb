@@ -57,6 +57,10 @@ func newFloatTable(
 	return t
 }
 
+func (t *floatTable) GetDone() <- chan struct{} {
+	return t.done
+}
+
 func (t *floatTable) Close() {
 	t.mu.Lock()
 	if t.cur != nil {
@@ -690,6 +694,10 @@ func newFloatGroupTable(
 	return t
 }
 
+func (t *floatGroupTable) GetDone() <- chan struct{} {
+	return t.done
+}
+
 func (t *floatGroupTable) Close() {
 	t.mu.Lock()
 	if t.cur != nil {
@@ -1036,6 +1044,10 @@ func newIntegerTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *integerTable) GetDone() <- chan struct{} {
+	return t.done
 }
 
 func (t *integerTable) Close() {
@@ -1673,6 +1685,10 @@ func newIntegerGroupTable(
 	return t
 }
 
+func (t *integerGroupTable) GetDone() <- chan struct{} {
+	return t.done
+}
+
 func (t *integerGroupTable) Close() {
 	t.mu.Lock()
 	if t.cur != nil {
@@ -2020,6 +2036,10 @@ func newUnsignedTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *unsignedTable) GetDone() <- chan struct{} {
+	return t.done
 }
 
 func (t *unsignedTable) Close() {
@@ -2655,6 +2675,10 @@ func newUnsignedGroupTable(
 	return t
 }
 
+func (t *unsignedGroupTable) GetDone() <- chan struct{} {
+	return t.done
+}
+
 func (t *unsignedGroupTable) Close() {
 	t.mu.Lock()
 	if t.cur != nil {
@@ -3001,6 +3025,10 @@ func newStringTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *stringTable) GetDone() <- chan struct{} {
+	return t.done
 }
 
 func (t *stringTable) Close() {
@@ -3636,6 +3664,10 @@ func newStringGroupTable(
 	return t
 }
 
+func (t *stringGroupTable) GetDone() <- chan struct{} {
+	return t.done
+}
+
 func (t *stringGroupTable) Close() {
 	t.mu.Lock()
 	if t.cur != nil {
@@ -3926,6 +3958,10 @@ func newBooleanTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *booleanTable) GetDone() <- chan struct{} {
+	return t.done
 }
 
 func (t *booleanTable) Close() {
@@ -4559,6 +4595,10 @@ func newBooleanGroupTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *booleanGroupTable) GetDone() <- chan struct{} {
+	return t.done
 }
 
 func (t *booleanGroupTable) Close() {

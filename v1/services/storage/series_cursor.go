@@ -167,6 +167,8 @@ func (c *indexSeriesCursor) Next() *reads.SeriesRow {
 		return nil
 	}
 
+	//newSeriesRow := new(reads.SeriesRow)
+
 	for {
 		if len(c.nf) == 0 {
 			// next series key
@@ -182,6 +184,9 @@ func (c *indexSeriesCursor) Next() *reads.SeriesRow {
 
 			c.row.Name = sr.Name
 			c.row.SeriesTags = sr.Tags
+			//newSeriesRow.Name = sr.Name
+			//newSeriesRow.SeriesTags = sr.Tags
+			//newSeriesRow.Query = c.row.Query
 			c.tags = copyTags(c.tags, sr.Tags)
 			c.tags.Set(measurementKeyBytes, sr.Name)
 
@@ -198,17 +203,23 @@ func (c *indexSeriesCursor) Next() *reads.SeriesRow {
 
 	c.tags.Set(fieldKeyBytes, c.field.nb)
 	c.row.Field = c.field.n
+	//newSeriesRow.Field = c.field.n
 
 	if c.cond != nil && c.hasValueExpr {
 		// TODO(sgc): lazily evaluate valueCond
 		c.row.ValueCond = influxql.Reduce(c.cond, c)
+		//newSeriesRow.ValueCond = influxql.Reduce(c.cond, c)
 		if reads.IsTrueBooleanLiteral(c.row.ValueCond) {
 			// we've reduced the expression to "true"
 			c.row.ValueCond = nil
+			//newSeriesRow.ValueCond = nil
 		}
 	}
 
 	c.row.Tags = copyTags(c.row.Tags, c.tags)
+	//newSeriesRow.Tags = copyTags(c.row.Tags, c.tags)
+
+	//c.row = *newSeriesRow
 
 	return &c.row
 }

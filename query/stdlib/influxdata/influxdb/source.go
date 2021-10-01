@@ -56,8 +56,13 @@ func (s *Source) Run(ctx context.Context) {
 		err = s.runner.run(ctx)
 	}
 	s.m.recordMetrics(labelValues, start)
-	for _, t := range s.ts {
-		t.Finish(s.id, err)
+	//for _, t := range s.ts {
+	//	t.Finish(s.id, err)
+	//}
+
+	mpl := execute.ExecutionState.ESmultiThreadPipeLine
+	for i := 0; i < len(mpl); i++ {
+		mpl[i].Worker[0].Finish(s.id, err)
 	}
 }
 
@@ -99,6 +104,10 @@ func (s *Source) processTable(ctx context.Context, tbl flux.Table) error {
 		return nil
 	} else if len(s.ts) == 1 {
 		return s.ts[0].Process(s.id, tbl)
+
+		// send to different pipeline worker (first operator)
+		//return execute.ExecutionState.ESmultiThreadPipeLine[0].Worker[0].Process(
+		//	s.id, tbl)
 	}
 
 	// There is more than one transformation so we need to

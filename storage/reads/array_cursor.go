@@ -3,7 +3,6 @@ package reads
 import (
 	"context"
 	"fmt"
-
 	"github.com/influxdata/flux/interval"
 	"github.com/influxdata/influxdb/v2/storage/reads/datatypes"
 	"github.com/influxdata/influxdb/v2/tsdb/cursors"
@@ -127,8 +126,18 @@ func (m *multiShardArrayCursors) createCursor(row SeriesRow) cursors.Cursor {
 		m.cursors.i.reset(c, row.Query, cond)
 		return &m.cursors.i
 	case cursors.FloatArrayCursor:
-		m.cursors.f.reset(c, row.Query, cond)
-		return &m.cursors.f
+
+		ff := new(floatMultiShardArrayCursor)
+		ff.reset(c, row.Query, cond)
+
+		m.cursors.f = *ff
+
+		//log.Println("ff: ", ff.FloatArrayCursor)
+
+		return ff
+
+		//m.cursors.f.reset(c, row.Query, cond)
+		//return &m.cursors.f
 	case cursors.UnsignedArrayCursor:
 		m.cursors.u.reset(c, row.Query, cond)
 		return &m.cursors.u

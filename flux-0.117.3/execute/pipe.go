@@ -13,11 +13,6 @@ import (
 	"sync"
 )
 
-var CountMap int = 0
-
-var OperatorMap map[string]*consecutiveTransport = make(map[string]*consecutiveTransport, 10)
-var ResOperator Transformation
-
 type pipeWorker struct {
 
 	message	chan flux.Table

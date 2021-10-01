@@ -8,7 +8,6 @@ package tsm1
 
 import (
 	"context"
-
 	"github.com/influxdata/influxdb/v2/influxql/query"
 	"github.com/influxdata/influxdb/v2/models"
 	"github.com/influxdata/influxdb/v2/tsdb"
@@ -20,9 +19,10 @@ func (q *arrayCursorIterator) buildFloatArrayCursor(ctx context.Context, name []
 	cacheValues := q.e.Cache.Values(key)
 	keyCursor := q.e.KeyCursor(ctx, key, opt.SeekTime(), opt.Ascending)
 	if opt.Ascending {
-		if q.asc.Float == nil {
-			q.asc.Float = newFloatArrayAscendingCursor()
-		}
+		q.asc.Float = newFloatArrayAscendingCursor()
+		//if q.asc.Float == nil {
+		//	q.asc.Float = newFloatArrayAscendingCursor()
+		//}
 		q.asc.Float.reset(opt.SeekTime(), opt.StopTime(), cacheValues, keyCursor)
 		return q.asc.Float
 	} else {

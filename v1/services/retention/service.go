@@ -3,6 +3,7 @@ package retention // import "github.com/influxdata/influxdb/services/retention"
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -53,6 +54,9 @@ func (s *Service) Open(ctx context.Context) error {
 	go func() {
 		defer s.wg.Done()
 		s.run(ctx)
+
+		log.Println("run is over ")
+
 	}()
 	return nil
 }
