@@ -195,6 +195,10 @@ type pivotTransformation struct {
 	nextRowCol map[string]rowCol
 }
 
+func (t *pivotTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *pivotTransformation) ClearCache() error {
 	panic("implement me")
 }
@@ -442,6 +446,10 @@ type pivotTransformation2 struct {
 
 	watermark  execute.Time
 	processing execute.Time
+}
+
+func (t *pivotTransformation2) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
 }
 
 func (t *pivotTransformation2) ClearCache() error {

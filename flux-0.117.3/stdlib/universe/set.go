@@ -101,6 +101,10 @@ type setTransformation struct {
 	key, value string
 }
 
+func (t *setTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *setTransformation) ClearCache() error {
 	panic("implement me")
 }

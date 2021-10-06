@@ -260,6 +260,10 @@ type ToMQTTTransformation struct {
 	spec  *ToMQTTProcedureSpec
 }
 
+func (t *ToMQTTTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *ToMQTTTransformation) ClearCache() error {
 	panic("implement me")
 }

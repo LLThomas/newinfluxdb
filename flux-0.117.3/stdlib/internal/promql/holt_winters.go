@@ -111,6 +111,10 @@ type holtWintersTransformation struct {
 	trendFactor     float64
 }
 
+func (t *holtWintersTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *holtWintersTransformation) ClearCache() error {
 	panic("implement me")
 }

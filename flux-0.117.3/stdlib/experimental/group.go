@@ -126,6 +126,10 @@ type groupTransformation struct {
 	keys []string
 }
 
+func (t *groupTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *groupTransformation) ClearCache() error {
 	panic("implement me")
 }

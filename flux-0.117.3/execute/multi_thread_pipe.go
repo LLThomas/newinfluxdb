@@ -2,6 +2,7 @@ package execute
 
 import (
 	"context"
+	"github.com/influxdata/influxdb/v2/tsdb"
 	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"log"
 	"sync"
@@ -13,6 +14,11 @@ var WG sync.WaitGroup
 // global executionState
 var ExecutionState *executionState
 
+// global ctx for tsdb.CreateCursorIterators()
+var MyCTX context.Context
+// global shard info for above
+var MyShards []*tsdb.Shard
+
 // global transformation operators line
 var OperatorIndex map[string]int = make(map[string]int)
 var OperatorMap map[string]*consecutiveTransport = make(map[string]*consecutiveTransport)
@@ -20,11 +26,11 @@ var ResOperator Transformation
 
 type MultiThreadPipeLine struct {
 	// series key
-	DataSource	[]cursors.Cursor
-	Current		[]cursors.Cursor
+	DataSource []cursors.Cursor
+	Current []cursors.Cursor
 
 	// worker in this pipeline
-	Worker 		[]*consecutiveTransport
+	Worker []*consecutiveTransport
 }
 
 func newMultiPipeLine(dataSource []cursors.Cursor, current []cursors.Cursor, worker []*consecutiveTransport) *MultiThreadPipeLine {
@@ -43,16 +49,6 @@ func (mpl *MultiThreadPipeLine) startPipeLine(ctx context.Context)  {
 		mpl.Worker[i].startPipeWorker(ctx)
 	}
 }
-
-//func (mpl *MultiThreadPipeLine) stopPipeLine() error {
-//	for i := 0; i < len(mpl.Worker); i++ {
-//		log.Println("stop pipe worker: ", mpl.Worker[i].Label())
-//		if err := mpl.Worker[i].worker.Stop(); err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
 
 func StopAllOperatorThread(whichOperator int) error {
 	mpl := ExecutionState.ESmultiThreadPipeLine
@@ -92,14 +88,18 @@ func SplitSeriesKey(allSeriesKey []cursors.Cursor) map[cursors.Cursor]int {
 // dispatch datasource to current and send to first operator
 func DispatchAndSend(ff func(whichPipeLine int))  {
 	mpl := ExecutionState.ESmultiThreadPipeLine
+	l := ExecutionState.Len
 	for i := 0; i < len(mpl); i++ {
 		for len(mpl[i].DataSource) > 0 {
 			// set the size of current to 3 (executor.go:139 make([]cursors.Cursor, 3))
 			// fill the current with DataSource (first time)
-			//for j := 0; j < len(mpl[i].Current) && len(mpl[i].DataSource) > 0; j++ {
-			//	mpl[i].Current[j] = mpl[i].DataSource[0]
-			//	mpl[i].DataSource = mpl[i].DataSource[1:]
-			//}
+			if len(mpl[i].DataSource) >= l {
+				mpl[i].Current = mpl[i].DataSource[0: l]
+				mpl[i].DataSource = mpl[i].DataSource[l:]
+			} else {
+				mpl[i].Current = mpl[i].DataSource[0:]
+				mpl[i].DataSource = mpl[i].DataSource[:0]
+			}
 			ff(i)
 		}
 	}

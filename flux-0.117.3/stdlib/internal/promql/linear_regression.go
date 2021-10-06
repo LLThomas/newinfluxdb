@@ -111,6 +111,10 @@ type linearRegressionTransformation struct {
 	fromNow float64
 }
 
+func (t *linearRegressionTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *linearRegressionTransformation) ClearCache() error {
 	panic("implement me")
 }

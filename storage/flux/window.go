@@ -3,6 +3,7 @@ package storageflux
 import (
 	"context"
 	"fmt"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"sync/atomic"
 
 	"github.com/apache/arrow/go/arrow/array"
@@ -128,6 +129,18 @@ type windowTableRow struct {
 	used   int32
 	buffer arrow.TableBuffer
 	done   chan struct{}
+}
+
+func (w *windowTableRow) Close() {
+	panic("implement me")
+}
+
+func (w *windowTableRow) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (w *windowTableRow) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (w *windowTableRow) Key() flux.GroupKey {

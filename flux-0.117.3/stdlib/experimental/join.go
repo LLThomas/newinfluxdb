@@ -138,6 +138,10 @@ type mergeJoinTransformation struct {
 	done  bool
 }
 
+func (t *mergeJoinTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *mergeJoinTransformation) ClearCache() error {
 	panic("implement me")
 }

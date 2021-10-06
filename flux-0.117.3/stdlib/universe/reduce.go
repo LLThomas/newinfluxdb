@@ -119,6 +119,10 @@ type reduceTransformation struct {
 	identity values.Object
 }
 
+func (t *reduceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *reduceTransformation) ClearCache() error {
 	panic("implement me")
 }

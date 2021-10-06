@@ -184,6 +184,10 @@ type tableTransformation struct {
 	mem  memory.Allocator
 }
 
+func (t *tableTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *tableTransformation) ClearCache() error {
 	panic("implement me")
 }

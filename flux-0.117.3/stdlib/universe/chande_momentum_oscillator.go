@@ -120,6 +120,10 @@ type chandeMomentumOscillatorTransformation struct {
 	columns []string
 }
 
+func (t *chandeMomentumOscillatorTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *chandeMomentumOscillatorTransformation) ClearCache() error {
 	panic("implement me")
 }

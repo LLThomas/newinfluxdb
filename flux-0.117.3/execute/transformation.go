@@ -15,6 +15,7 @@ type Transformation interface {
 	RetractTable(id DatasetID, key flux.GroupKey) error
 	// Process takes in one flux Table, performs data processing on it and
 	// writes that table to a DataCache
+	ProcessTbl(id DatasetID, tbls []flux.Table) error
 	Process(id DatasetID, tbl flux.Table) error
 	UpdateWatermark(id DatasetID, t Time) error
 	UpdateProcessingTime(id DatasetID, t Time) error

@@ -120,6 +120,10 @@ type mapTransformation struct {
 	mergeKey bool
 }
 
+func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *mapTransformation) ClearCache() error {
 	return t.ClearCache()
 }
@@ -210,7 +214,7 @@ func (t *mapTransformation) Process(id execute.DatasetID, tbl flux.Table) error 
 		if nextOperator == nil {
 			execute.ResOperator.Process(execute.DatasetID{0}, b)
 		} else {
-			nextOperator.PushToChannel(b)
+			//nextOperator.PushToChannel(b)
 		}
 		return nil
 	})

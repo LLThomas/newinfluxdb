@@ -32,6 +32,10 @@ type windowTransformation2 struct {
 	timeCol, startCol, stopCol string
 }
 
+func (w *windowTransformation2) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (w *windowTransformation2) ClearCache() error {
 	panic("implement me")
 }

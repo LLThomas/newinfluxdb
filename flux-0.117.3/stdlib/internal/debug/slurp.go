@@ -82,6 +82,10 @@ type slurpTransformation struct {
 	mem memory.Allocator
 }
 
+func (t *slurpTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *slurpTransformation) ClearCache() error {
 	panic("implement me")
 }

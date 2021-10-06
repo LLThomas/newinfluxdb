@@ -2,6 +2,7 @@ package execute
 
 import (
 	"fmt"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"sort"
 	"sync/atomic"
 
@@ -1290,6 +1291,18 @@ type ColListTable struct {
 	refCount int32
 }
 
+func (t *ColListTable) Close() {
+	panic("implement me")
+}
+
+func (t *ColListTable) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (t *ColListTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
+}
+
 func (t *ColListTable) RefCount(n int) {
 	c := atomic.AddInt32(&t.refCount, int32(n))
 	if c == 0 {
@@ -2109,6 +2122,18 @@ type emptyTable struct {
 	key  flux.GroupKey
 	cols []flux.ColMeta
 	used int32
+}
+
+func (t *emptyTable) Close() {
+	panic("implement me")
+}
+
+func (t *emptyTable) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (t *emptyTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 // NewEmptyTable constructs a new empty table with the given

@@ -103,6 +103,10 @@ type instantRateTransformation struct {
 	isRate bool
 }
 
+func (t *instantRateTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *instantRateTransformation) ClearCache() error {
 	panic("implement me")
 }

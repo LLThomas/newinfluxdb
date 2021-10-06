@@ -108,6 +108,10 @@ type limitTransformation struct {
 	n, offset int
 }
 
+func (t *limitTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *limitTransformation) ClearCache() error {
 	panic("implement me")
 }

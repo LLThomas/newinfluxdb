@@ -81,6 +81,10 @@ type resetsTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *resetsTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *resetsTransformation) ClearCache() error {
 	panic("implement me")
 }

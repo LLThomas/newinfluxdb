@@ -1,6 +1,9 @@
 package table
 
-import "github.com/influxdata/flux"
+import (
+	"github.com/influxdata/flux"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
+)
 
 // Copy returns a buffered copy of the table and consumes the
 // input table. If the input table is already buffered, it "consumes"
@@ -48,6 +51,18 @@ type tableBuffer struct {
 	colMeta []flux.ColMeta
 	i       int
 	buffers []flux.ColReader
+}
+
+func (tb *tableBuffer) Close() {
+	panic("implement me")
+}
+
+func (tb *tableBuffer) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (tb *tableBuffer) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (tb *tableBuffer) Key() flux.GroupKey {

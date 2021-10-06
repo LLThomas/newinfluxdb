@@ -89,6 +89,10 @@ type unionTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *unionTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *unionTransformation) ClearCache() error {
 	panic("implement me")
 }

@@ -162,6 +162,10 @@ type rangeTransformation struct {
 	stopCol  string
 }
 
+func (t *rangeTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *rangeTransformation) ClearCache() error {
 	panic("implement me")
 }

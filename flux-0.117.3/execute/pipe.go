@@ -15,7 +15,8 @@ import (
 
 type pipeWorker struct {
 
-	message	chan flux.Table
+	//message	chan flux.Table
+	message chan []flux.Table
 	t 		Transformation
 	closed  bool
 	closing chan struct{}
@@ -31,7 +32,7 @@ type pipeWorker struct {
 
 func newPipeWorker(t Transformation, logger *zap.Logger) *pipeWorker {
 	return &pipeWorker{
-		message: make(chan flux.Table, 100),
+		message: make(chan []flux.Table, 1024),
 		t: t,
 		closed: false,
 		closing: make(chan struct{}),

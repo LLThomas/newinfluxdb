@@ -103,6 +103,10 @@ type modeTransformation struct {
 	column string
 }
 
+func (t *modeTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *modeTransformation) ClearCache() error {
 	panic("implement me")
 }

@@ -140,6 +140,10 @@ type histogramTransformation struct {
 	spec HistogramProcedureSpec
 }
 
+func (t *histogramTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *histogramTransformation) ClearCache() error {
 	panic("implement me")
 }

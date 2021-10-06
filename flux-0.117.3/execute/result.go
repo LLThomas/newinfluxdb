@@ -19,6 +19,18 @@ type result struct {
 	aborted  chan struct{}
 }
 
+func (s *result) ProcessTbl(id DatasetID, tbls []flux.Table) error {
+	for i := 0; i < len(tbls); i++ {
+		select {
+		case s.tables <- resultMessage{
+			table: tbls[i],
+		}:
+		case <-s.aborted:
+		}
+	}
+	return nil
+}
+
 func (s *result) ClearCache() error {
 	panic("not implement")
 }

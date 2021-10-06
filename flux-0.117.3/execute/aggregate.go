@@ -18,6 +18,10 @@ type aggregateTransformation struct {
 	config AggregateConfig
 }
 
+func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *aggregateTransformation) ClearCache() error {
 	return t.d.ClearCache()
 }
@@ -203,7 +207,7 @@ func (t *aggregateTransformation) Process(id DatasetID, tbl flux.Table) error {
 	if nextOperator == nil {
 		ResOperator.Process(DatasetID{0}, b)
 	} else {
-		nextOperator.PushToChannel(b)
+		//nextOperator.PushToChannel(b)
 	}
 	return err
 }

@@ -109,6 +109,10 @@ type movingAverageTransformation struct {
 	notEmpty      []bool
 }
 
+func (t *movingAverageTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *movingAverageTransformation) ClearCache() error {
 	panic("implement me")
 }

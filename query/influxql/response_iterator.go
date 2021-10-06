@@ -2,6 +2,7 @@ package influxql
 
 import (
 	"fmt"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"sort"
 	"strconv"
 	"time"
@@ -110,6 +111,18 @@ type queryTable struct {
 	cols     []array.Interface
 }
 
+func (t *queryTable) Close() {
+	panic("implement me")
+}
+
+func (t *queryTable) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (t *queryTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
+}
+
 func newQueryTable(r *Row) (*queryTable, error) {
 	t := &queryTable{
 		row: r,
@@ -118,10 +131,6 @@ func newQueryTable(r *Row) (*queryTable, error) {
 		return nil, err
 	}
 	return t, nil
-}
-
-func (t *queryTable) Statistics() flux.Statistics {
-	return flux.Statistics{}
 }
 
 // Data in a column is laid out in the following way:

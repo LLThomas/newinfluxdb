@@ -115,6 +115,10 @@ type keyValuesTransformation struct {
 	distinct bool
 }
 
+func (t *keyValuesTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *keyValuesTransformation) ClearCache() error {
 	panic("implement me")
 }

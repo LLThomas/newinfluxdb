@@ -78,6 +78,10 @@ type passTransformation struct {
 	d *execute.PassthroughDataset
 }
 
+func (t *passTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *passTransformation) ClearCache() error {
 	panic("implement me")
 }

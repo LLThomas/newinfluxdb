@@ -4,7 +4,6 @@ package storageflux
 
 import (
 	"errors"
-	"log"
 	"sync/atomic"
 
 	"github.com/apache/arrow/go/arrow/array"
@@ -72,6 +71,7 @@ func (t *table) isCancelled() bool {
 }
 
 func (t *table) init(advance func() bool) {
+	//log.Println("init advance()")
 	t.empty = !advance() && t.err == nil
 }
 
@@ -85,7 +85,7 @@ func (t *table) do(f func(flux.ColReader) error, advance func() bool) error {
 	defer func() {
 		t.closeDone()
 		execute.WG.Done()
-		log.Println("table.go: ", t.key.String(), " call Done ")
+		//log.Println("table.go: ", t.key.String(), " call Done ")
 	}()
 
 	// If an error occurred during initialization, that is

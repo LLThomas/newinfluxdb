@@ -2,6 +2,7 @@ package table
 
 import (
 	"context"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"sync/atomic"
 
 	"github.com/apache/arrow/go/arrow/array"
@@ -154,6 +155,18 @@ type streamTable struct {
 	ch     <-chan streamBuffer
 	done   <-chan struct{}
 	empty  bool
+}
+
+func (s *streamTable) Close() {
+	panic("implement me")
+}
+
+func (s *streamTable) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (s *streamTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (s *streamTable) Key() flux.GroupKey {

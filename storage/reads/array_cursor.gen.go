@@ -315,6 +315,9 @@ func (c *floatMultiShardArrayCursor) nextArrayCursor() bool {
 	var cur cursors.Cursor
 	for cur == nil && len(c.itrs) > 0 {
 		itr, c.itrs = c.itrs[0], c.itrs[1:]
+
+		//log.Println("nextArrayCursor c.req: ", c.req)
+
 		cur, _ = itr.Next(c.ctx, c.req)
 	}
 

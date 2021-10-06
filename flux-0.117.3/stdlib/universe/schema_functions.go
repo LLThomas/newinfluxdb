@@ -2,6 +2,7 @@ package universe
 
 import (
 	"context"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
@@ -426,6 +427,10 @@ type schemaMutationTransformation struct {
 	mutators []SchemaMutator
 }
 
+func (t *schemaMutationTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *schemaMutationTransformation) ClearCache() error {
 	panic("implement me")
 }
@@ -514,6 +519,18 @@ func (t *schemaMutationTransformation) Finish(id execute.DatasetID, err error) {
 type mutateTable struct {
 	in  flux.Table
 	ctx *BuilderContext
+}
+
+func (m *mutateTable) Close() {
+	panic("implement me")
+}
+
+func (m *mutateTable) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (m *mutateTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (m *mutateTable) Key() flux.GroupKey   { return m.ctx.Key() }

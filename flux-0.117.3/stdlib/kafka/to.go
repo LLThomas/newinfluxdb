@@ -225,6 +225,10 @@ type ToKafkaTransformation struct {
 	spec  *ToKafkaProcedureSpec
 }
 
+func (t *ToKafkaTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *ToKafkaTransformation) ClearCache() error {
 	panic("implement me")
 }

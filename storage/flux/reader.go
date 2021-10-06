@@ -3,7 +3,6 @@ package storageflux
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/gogo/protobuf/types"
@@ -195,14 +194,19 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 	pipeToGroupKey := execute.SplitSeriesKey(allSeriesKey)
 
 	// construct table and send tables to first operator
-	allTables := make([]storageTable, 0)
+	allTables := make([][]flux.Table, 0)
 	mpl := execute.ExecutionState.ESmultiThreadPipeLine
 	ff := func(whichPipeLine int) {
-		for len(mpl[whichPipeLine].DataSource) > 0 {
+
+		tables := make([]flux.Table, 0)
+		for i := 0; i < len(mpl[whichPipeLine].Current); i++ {
 			var table storageTable
-			cur := mpl[whichPipeLine].DataSource[0]
+			cur := mpl[whichPipeLine].Current[i]
 			index := pipeToGroupKey[cur]
 			key := allGroupKey[index]
+
+			//log.Println("reader.go table key index: ", key.String(), index)
+
 			done := make(chan struct{})
 			switch typedCur := cur.(type) {
 			case cursors.IntegerArrayCursor:
@@ -223,16 +227,11 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 			default:
 				panic(fmt.Sprintf("unreachable: %T", typedCur))
 			}
-
-			//f(table)
-			//log.Println("send to pipeline ", whichPipeLine, " table: ", table.Key())
-			//log.Printf("table: %p\n", table)
-
-			// send to different pipeline worker (first operator)
-			allTables = append(allTables, table)
-			mpl[whichPipeLine].Worker[0].Process(execute.DatasetID{0}, table)
-			mpl[whichPipeLine].DataSource = mpl[whichPipeLine].DataSource[1:]
+			tables = append(tables, table)
 		}
+		// send table group to first operator
+		allTables = append(allTables, tables)
+		mpl[whichPipeLine].Worker[0].ProcessTbls(execute.DatasetID{0}, tables)
 	}
 	execute.DispatchAndSend(ff)
 
@@ -242,14 +241,13 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 	// after all tables call closeDone(), close all tables
 	// if table doesn't call Close(), there will be some problem when closing shard
 	for i := 0; i < len(allTables); i++ {
-
-		log.Println("reader.go: ", allTables[i].Key(), " done ")
-
-		stats := allTables[i].Statistics()
-		fi.stats.ScannedValues += stats.ScannedValues
-		fi.stats.ScannedBytes += stats.ScannedBytes
-		allTables[i].Close()
-		allTables[i] = nil
+		for j := 0; j < len(allTables[i]); j++ {
+			stats := allTables[i][j].Statistics()
+			fi.stats.ScannedValues += stats.ScannedValues
+			fi.stats.ScannedBytes += stats.ScannedBytes
+			allTables[i][j].Close()
+			allTables[i][j] = nil
+		}
 	}
 
 	// clear all extra memory
@@ -259,51 +257,6 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 	allGroupKey = nil
 
 	return rs.Err()
-
-	//for i := 0; i < len(mpl); i++ {
-	//	log.Println("len(DataSource): ", len(mpl[i].DataSource))
-	//	for len(mpl[i].DataSource) > 0 {
-	//		// set the size of current to 3 (executor.go:139 make([]cursors.Cursor, 3))
-	//		// fill the current with DataSource (first time)
-	//		for j := 0; j < len(mpl[i].Current) && len(mpl[i].DataSource) > 0; j++ {
-	//			mpl[i].Current[j] = mpl[i].DataSource[0]
-	//			mpl[i].DataSource = mpl[i].DataSource[1:]
-	//		}
-	//		var tables []storageTable
-	//		for k := 0; k < len(mpl[i].Current) && mpl[i].Current[k] != nil; k++ {
-	//			cur = mpl[i].Current[k]
-	//			bnds := fi.spec.Bounds
-	//			key := defaultGroupKeyForSeries(rs.Tags(), bnds)
-	//			done := make(chan struct{})
-	//			switch typedCur := cur.(type) {
-	//			case cursors.IntegerArrayCursor:
-	//				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TInt)
-	//				table = newIntegerTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
-	//			case cursors.FloatArrayCursor:
-	//				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TFloat)
-	//				table = newFloatTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
-	//			case cursors.UnsignedArrayCursor:
-	//				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TUInt)
-	//				table = newUnsignedTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
-	//			case cursors.BooleanArrayCursor:
-	//				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TBool)
-	//				table = newBooleanTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
-	//			case cursors.StringArrayCursor:
-	//				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TString)
-	//				table = newStringTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
-	//			default:
-	//				panic(fmt.Sprintf("unreachable: %T", typedCur))
-	//			}
-	//			tables = append(tables, table)
-	//		}
-	//		// send tables to first operator
-	//		f(tables)
-	//		log.Println("tables: ", tables)
-	//		for t := 0; t < len(tables); t++ {
-	//			log.Println(tables[t].Key())
-	//		}
-	//	}
-	//}
 
 	// handle table
 	//if !table.Empty() {

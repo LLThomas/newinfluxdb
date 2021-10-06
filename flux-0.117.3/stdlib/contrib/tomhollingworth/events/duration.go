@@ -158,6 +158,10 @@ type durationTransformation struct {
 	isStop     bool
 }
 
+func (t *durationTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *durationTransformation) ClearCache() error {
 	panic("implement me")
 }

@@ -7,9 +7,11 @@
 package storageflux
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sync"
+	"sync/atomic"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
@@ -57,6 +59,43 @@ func newFloatTable(
 	return t
 }
 
+const (
+	// first call just return t.colBufs
+	FirstCall = iota
+	// next call call advance and return t.colBufs
+	MultiCall
+	// if all blocks have served, call t.closeDone to wake channel (<-t.finished transport.go)
+)
+
+func (t *floatTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	switch operationLabel {
+	case FirstCall:
+		if !atomic.CompareAndSwapInt32(&t.used, 0, 1) {
+			return nil, errors.New("table already used")
+		}
+		// If an error occurred during initialization, that is
+		// returned here.
+		if t.err != nil {
+			return nil, t.err
+		}
+		if !t.Empty() {
+			return t.colBufs, nil
+		}
+		return nil, t.err
+	case MultiCall:
+		t.colBufs.Release()
+		if !t.isCancelled() && t.err == nil && t.advance() {
+			return t.colBufs, nil
+		}
+		return nil, t.err
+	default:
+		t.colBufs.Release()
+		t.colBufs = nil
+		t.closeDone()
+		return nil, t.err
+	}
+}
+
 func (t *floatTable) GetDone() <- chan struct{} {
 	return t.done
 }
@@ -89,6 +128,9 @@ func (t *floatTable) Do(f func(flux.ColReader) error) error {
 }
 
 func (t *floatTable) advance() bool {
+
+	//log.Println("advance(): ", t.key.String())
+
 	a := t.cur.Next()
 	l := a.Len()
 	if l == 0 {
@@ -671,6 +713,10 @@ type floatGroupTable struct {
 	cur cursors.FloatArrayCursor
 }
 
+func (t *floatGroupTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
+}
+
 func newFloatGroupTable(
 	done chan struct{},
 	gc storage.GroupCursor,
@@ -1044,6 +1090,10 @@ func newIntegerTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *integerTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (t *integerTable) GetDone() <- chan struct{} {
@@ -1662,6 +1712,10 @@ type integerGroupTable struct {
 	cur cursors.IntegerArrayCursor
 }
 
+func (t *integerGroupTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
+}
+
 func newIntegerGroupTable(
 	done chan struct{},
 	gc storage.GroupCursor,
@@ -2036,6 +2090,10 @@ func newUnsignedTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *unsignedTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (t *unsignedTable) GetDone() <- chan struct{} {
@@ -2652,6 +2710,10 @@ type unsignedGroupTable struct {
 	cur cursors.UnsignedArrayCursor
 }
 
+func (t *unsignedGroupTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
+}
+
 func newUnsignedGroupTable(
 	done chan struct{},
 	gc storage.GroupCursor,
@@ -3025,6 +3087,10 @@ func newStringTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *stringTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (t *stringTable) GetDone() <- chan struct{} {
@@ -3641,6 +3707,10 @@ type stringGroupTable struct {
 	cur cursors.StringArrayCursor
 }
 
+func (t *stringGroupTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
+}
+
 func newStringGroupTable(
 	done chan struct{},
 	gc storage.GroupCursor,
@@ -3958,6 +4028,10 @@ func newBooleanTable(
 	t.init(t.advance)
 
 	return t
+}
+
+func (t *booleanTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (t *booleanTable) GetDone() <- chan struct{} {
@@ -4572,6 +4646,10 @@ type booleanGroupTable struct {
 	mu  sync.Mutex
 	gc  storage.GroupCursor
 	cur cursors.BooleanArrayCursor
+}
+
+func (t *booleanGroupTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func newBooleanGroupTable(

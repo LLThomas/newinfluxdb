@@ -1,6 +1,7 @@
 package table
 
 import (
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"sync/atomic"
 
 	"github.com/influxdata/flux"
@@ -29,6 +30,18 @@ type BufferedTable struct {
 	GroupKey flux.GroupKey
 	Columns  []flux.ColMeta
 	Buffers  []flux.ColReader
+}
+
+func (b *BufferedTable) Close() {
+	panic("implement me")
+}
+
+func (b *BufferedTable) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (b *BufferedTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 // FromBuffer constructs a flux.Table from a single flux.ColReader.

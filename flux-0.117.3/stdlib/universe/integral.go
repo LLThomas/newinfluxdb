@@ -133,6 +133,10 @@ type integralTransformation struct {
 	spec IntegralProcedureSpec
 }
 
+func (t *integralTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *integralTransformation) ClearCache() error {
 	panic("implement me")
 }

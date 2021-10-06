@@ -79,7 +79,11 @@ type executionState struct {
 
 	// number of finish operator
 	// when the sum is equal to the number of thread, result operator should be shut down
-	numMsgCount []int32
+	// in case of sending duplicate finish msgs to finish operator
+	numFinishMsgCount int32
+
+	// size of a block group
+	Len int
 }
 
 func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocator) (map[string]flux.Result, <-chan metadata.Metadata, error) {
@@ -147,12 +151,15 @@ func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *me
 		logger:                e.logger,
 		// assume that number of thread is equal to the number of cores
 		ESmultiThreadPipeLine: make([]*MultiThreadPipeLine, 6),
-		// assume that number of operators is 10
-		numMsgCount: make([]int32, 10),
+		// in case of sending duplicate finishMsg to finish operator, we count the finishMsg
+		// if numFinishMsgCount equals to the number of pipeline thread, we send a realy finish msg to finish operator
+		numFinishMsgCount: 0,
+		// assume that the size of block group is 3
+		Len: 3,
 	}
 
 	for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
-		es.ESmultiThreadPipeLine[i] = newMultiPipeLine(make([]cursors.Cursor, 0), make([]cursors.Cursor, 3), make([]*consecutiveTransport, 0))
+		es.ESmultiThreadPipeLine[i] = newMultiPipeLine(make([]cursors.Cursor, 0), make([]cursors.Cursor, 0), make([]*consecutiveTransport, 0))
 	}
 
 	v := &createExecutionNodeVisitor{

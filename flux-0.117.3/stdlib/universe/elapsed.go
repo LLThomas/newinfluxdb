@@ -124,6 +124,10 @@ type elapsedTransformation struct {
 	columnName string
 }
 
+func (t *elapsedTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *elapsedTransformation) ClearCache() error {
 	panic("implement me")
 }

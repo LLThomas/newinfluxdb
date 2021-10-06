@@ -65,6 +65,10 @@ type AssertEmptyTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *AssertEmptyTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *AssertEmptyTransformation) ClearCache() error {
 	panic("implement me")
 }

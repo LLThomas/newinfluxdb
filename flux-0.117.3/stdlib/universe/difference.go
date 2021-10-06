@@ -132,6 +132,10 @@ type differenceTransformation struct {
 	keepFirst   bool
 }
 
+func (t *differenceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *differenceTransformation) ClearCache() error {
 	panic("implement me")
 }

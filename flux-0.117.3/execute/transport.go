@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gofrs/uuid"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"log"
 	"reflect"
 	"strings"
@@ -47,6 +48,10 @@ type consecutiveTransport struct {
 	worker *pipeWorker
 }
 
+func (t *consecutiveTransport) ProcessTbl(id DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *consecutiveTransport) ClearCache() error {
 	panic("not implement")
 }
@@ -55,7 +60,7 @@ func (t *consecutiveTransport) startPipeWorker(ctx context.Context) {
 	t.worker.Start(t, ctx)
 }
 
-func (t *consecutiveTransport) PushToChannel(b flux.Table)  {
+func (t *consecutiveTransport) PushToChannel(b []flux.Table)  {
 	t.worker.message <- b
 }
 
@@ -183,6 +188,16 @@ func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) err
 // pipeline connectors
 // ***********************************************************
 
+func (t *consecutiveTransport) ProcessTbls(id DatasetID, tbls []flux.Table) error {
+	select {
+	case <-t.finished:
+		return t.err()
+	default:
+	}
+	t.worker.message <- tbls
+	return nil
+}
+
 func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 	select {
 	case <-t.finished:
@@ -192,7 +207,7 @@ func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 
 	//log.Println("processMsg: ", t.Label(), tbl.Key().Values())
 
-	t.worker.message <- tbl
+	t.worker.message <- nil
 	return nil
 }
 
@@ -285,7 +300,7 @@ PROCESS:
 	}
 }
 
-func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table)  {
+func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m []flux.Table)  {
 
 	if f, err := pipeProcess(ctx, t.t, m); err != nil || f {
 
@@ -303,11 +318,11 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table) 
 		//ConnectOperator(t.Label(), nil)
 		nextOperator := OperatorMap[t.Label()]
 		if nextOperator == nil {
-			atomic.AddInt32(&ExecutionState.numMsgCount[len(ExecutionState.ESmultiThreadPipeLine)], 1)
+			atomic.AddInt32(&ExecutionState.numFinishMsgCount, 1)
 
-			//log.Println("pipeprocess finish: ", atomic.LoadInt32(&ExecutionState.numMsgCount[len(ExecutionState.ESmultiThreadPipeLine)]))
+			//log.Println("pipeprocess finish: ", atomic.LoadInt32(&ExecutionState.numFinishMsgCount))
 
-			if int(atomic.LoadInt32(&ExecutionState.numMsgCount[len(ExecutionState.ESmultiThreadPipeLine)])) == len(ExecutionState.ESmultiThreadPipeLine) {
+			if int(atomic.LoadInt32(&ExecutionState.numFinishMsgCount)) == len(ExecutionState.ESmultiThreadPipeLine) {
 				ResOperator.Finish(DatasetID{0}, nil)
 			}
 		} else {
@@ -322,7 +337,7 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m flux.Table) 
 
 }
 
-func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished bool, err error) {
+func pipeProcess(ctx context.Context, t Transformation, m []flux.Table) (finished bool, err error) {
 
 	// table is nil means finish msg
 	// 1. if we have next operator , send finishMsg to it
@@ -342,7 +357,7 @@ func pipeProcess(ctx context.Context, t Transformation, m flux.Table) (finished 
 	}
 
 	_, span := StartSpanFromContext(ctx, reflect.TypeOf(t).String(), t.Label())
-	err = t.Process(DatasetID(uuid.Nil), m)
+	err = t.ProcessTbl(DatasetID(uuid.Nil), m)
 	if span != nil {
 		span.Finish()
 	}
@@ -494,6 +509,18 @@ func (m *finishMsg) Error() error {
 type consecutiveTransportTable struct {
 	transport *consecutiveTransport
 	tbl       flux.Table
+}
+
+func (t *consecutiveTransportTable) Close() {
+	panic("implement me")
+}
+
+func (t *consecutiveTransportTable) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (t *consecutiveTransportTable) BlockIterator(operationLable int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func newConsecutiveTransportTable(t *consecutiveTransport, tbl flux.Table) flux.Table {

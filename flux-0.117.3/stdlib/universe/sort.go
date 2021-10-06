@@ -125,6 +125,10 @@ type sortTransformation struct {
 	desc bool
 }
 
+func (t *sortTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *sortTransformation) ClearCache() error {
 	panic("implement me")
 }

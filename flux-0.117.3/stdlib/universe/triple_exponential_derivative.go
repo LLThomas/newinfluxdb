@@ -114,6 +114,10 @@ type tripleExponentialDerivativeTransformation struct {
 	n int64
 }
 
+func (t *tripleExponentialDerivativeTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *tripleExponentialDerivativeTransformation) ClearCache() error {
 	panic("implement me")
 }

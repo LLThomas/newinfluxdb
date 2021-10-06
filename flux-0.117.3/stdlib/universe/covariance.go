@@ -133,6 +133,10 @@ type CovarianceTransformation struct {
 	xym2 float64
 }
 
+func (t *CovarianceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *CovarianceTransformation) ClearCache() error {
 	panic("implement me")
 }

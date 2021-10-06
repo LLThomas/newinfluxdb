@@ -43,6 +43,10 @@ type rowSelectorTransformation struct {
 	selector RowSelector
 }
 
+func (t *rowSelectorTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *rowSelectorTransformation) ClearCache() error {
 	panic("implement me")
 }
@@ -50,6 +54,10 @@ func (t *rowSelectorTransformation) ClearCache() error {
 type indexSelectorTransformation struct {
 	selectorTransformation
 	selector IndexSelector
+}
+
+func (t *indexSelectorTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
+	panic("implement me")
 }
 
 func (t *indexSelectorTransformation) ClearCache() error {

@@ -161,6 +161,10 @@ type stateTrackingTransformation struct {
 	durationUnit int64
 }
 
+func (t *stateTrackingTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *stateTrackingTransformation) ClearCache() error {
 	panic("implement me")
 }

@@ -100,6 +100,10 @@ type mapTransformation struct {
 	mem memory.Allocator
 }
 
+func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *mapTransformation) ClearCache() error {
 	panic("implement me")
 }

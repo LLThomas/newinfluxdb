@@ -24,6 +24,10 @@ type sortTransformation2 struct {
 	compare arrowutil.CompareFunc
 }
 
+func (s *sortTransformation2) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (s *sortTransformation2) ClearCache() error {
 	panic("implement me")
 }

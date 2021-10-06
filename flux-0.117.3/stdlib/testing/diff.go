@@ -128,6 +128,10 @@ type DiffTransformation struct {
 	nansEqual bool
 }
 
+func (t *DiffTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *DiffTransformation) ClearCache() error {
 	panic("implement me")
 }

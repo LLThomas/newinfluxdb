@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"io"
 	"strconv"
 	"strings"
@@ -519,6 +520,18 @@ type tableDecoder struct {
 	done chan struct{}
 
 	eof bool
+}
+
+func (d *tableDecoder) Close() {
+	panic("implement me")
+}
+
+func (d *tableDecoder) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (d *tableDecoder) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func newTable(

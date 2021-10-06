@@ -70,6 +70,10 @@ type DedupKeyTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *DedupKeyTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *DedupKeyTransformation) ClearCache() error {
 	panic("implement me")
 }

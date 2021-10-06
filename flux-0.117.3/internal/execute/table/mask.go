@@ -5,6 +5,7 @@ import (
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/internal/execute/groupkey"
 	"github.com/influxdata/flux/values"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 )
 
 // Mask will return a no-copy Table that masks the given
@@ -50,6 +51,18 @@ type maskTable struct {
 	cols    []flux.ColMeta
 	table   flux.Table
 	offsets []int
+}
+
+func (m *maskTable) Close() {
+	panic("implement me")
+}
+
+func (m *maskTable) Statistics() cursors.CursorStats {
+	panic("implement me")
+}
+
+func (m *maskTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
+	panic("implement me")
 }
 
 func (m *maskTable) Key() flux.GroupKey {

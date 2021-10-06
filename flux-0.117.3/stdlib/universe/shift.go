@@ -136,6 +136,10 @@ type shiftTransformation struct {
 	columns []string
 }
 
+func (t *shiftTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *shiftTransformation) ClearCache() error {
 	panic("implement me")
 }

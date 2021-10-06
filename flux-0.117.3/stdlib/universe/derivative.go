@@ -147,6 +147,10 @@ type derivativeTransformation struct {
 	timeCol     string
 }
 
+func (t *derivativeTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *derivativeTransformation) ClearCache() error {
 	panic("implement me")
 }

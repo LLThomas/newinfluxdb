@@ -106,6 +106,10 @@ type tailTransformation struct {
 	n, offset int
 }
 
+func (t *tailTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *tailTransformation) ClearCache() error {
 	panic("implement me")
 }

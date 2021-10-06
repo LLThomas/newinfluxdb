@@ -151,6 +151,10 @@ type holtWintersTransformation struct {
 	interval   values.Duration
 }
 
+func (hwt *holtWintersTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (hwt *holtWintersTransformation) ClearCache() error {
 	panic("implement me")
 }

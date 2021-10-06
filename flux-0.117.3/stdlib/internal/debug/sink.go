@@ -78,6 +78,10 @@ type sinkTransformation struct {
 	d *execute.PassthroughDataset
 }
 
+func (t *sinkTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *sinkTransformation) ClearCache() error {
 	panic("implement me")
 }

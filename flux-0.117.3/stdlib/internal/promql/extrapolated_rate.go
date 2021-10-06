@@ -114,6 +114,10 @@ type extrapolatedRateTransformation struct {
 	isRate    bool
 }
 
+func (t *extrapolatedRateTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *extrapolatedRateTransformation) ClearCache() error {
 	panic("implement me")
 }

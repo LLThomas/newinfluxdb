@@ -101,6 +101,10 @@ type uniqueTransformation struct {
 	column string
 }
 
+func (t *uniqueTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *uniqueTransformation) ClearCache() error {
 	panic("implement me")
 }

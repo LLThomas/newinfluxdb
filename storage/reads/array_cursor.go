@@ -3,9 +3,13 @@ package reads
 import (
 	"context"
 	"fmt"
+	"github.com/influxdata/flux/execute"
 	"github.com/influxdata/flux/interval"
 	"github.com/influxdata/influxdb/v2/storage/reads/datatypes"
+	"github.com/influxdata/influxdb/v2/tsdb"
 	"github.com/influxdata/influxdb/v2/tsdb/cursors"
+	"log"
+	"os"
 )
 
 type singleValue struct {
@@ -105,6 +109,15 @@ func (m *multiShardArrayCursors) createCursor(row SeriesRow) cursors.Cursor {
 	m.req.Tags = row.SeriesTags
 	m.req.Field = row.Field
 
+	// *********************************************************************************************************************************
+	// every time createCursor is called, row.Query should be recreated in case of the situation only the last series key can access the raw data
+	// *********************************************************************************************************************************
+	var err error
+	if row.Query, err = tsdb.CreateCursorIterators(execute.MyCTX, execute.MyShards); err != nil {
+		log.Println("tsdb.CreateCursorIterators error: ", err)
+		os.Exit(0)
+	}
+
 	var cond expression
 	if row.ValueCond != nil {
 		cond = &astExpr{row.ValueCond}
@@ -129,10 +142,22 @@ func (m *multiShardArrayCursors) createCursor(row SeriesRow) cursors.Cursor {
 
 		ff := new(floatMultiShardArrayCursor)
 		ff.reset(c, row.Query, cond)
+		// **************************************************************************************************
+		// reset CursorRequest, CursorRequest will be used in advance() to create new cursor for another tsm
+		// CursorRequest offers the key in tsm
+		// due to the point reference, next step will change the original info
+		// next operator will be wrong if we do not care this
+		// **************************************************************************************************
+		ff.req = &cursors.CursorRequest{
+			Name:      m.req.Name,
+			Tags:      m.req.Tags,
+			Field:     m.req.Field,
+			Ascending: m.req.Ascending,
+			StartTime: m.req.StartTime,
+			EndTime:   m.req.EndTime,
+		}
 
-		m.cursors.f = *ff
-
-		//log.Println("ff: ", ff.FloatArrayCursor)
+		//m.cursors.f = *ff
 
 		return ff
 

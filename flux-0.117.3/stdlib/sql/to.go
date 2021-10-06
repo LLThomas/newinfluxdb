@@ -144,6 +144,10 @@ type ToSQLTransformation struct {
 	tx    *sql.Tx
 }
 
+func (t *ToSQLTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *ToSQLTransformation) ClearCache() error {
 	panic("implement me")
 }

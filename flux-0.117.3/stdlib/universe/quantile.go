@@ -389,6 +389,10 @@ type ExactQuantileSelectorTransformation struct {
 	a     *memory.Allocator
 }
 
+func (t *ExactQuantileSelectorTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *ExactQuantileSelectorTransformation) ClearCache() error {
 	panic("implement me")
 }

@@ -121,6 +121,10 @@ type hourSelectionTransformation struct {
 	timeCol string
 }
 
+func (t *hourSelectionTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *hourSelectionTransformation) ClearCache() error {
 	panic("implement me")
 }

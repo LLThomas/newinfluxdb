@@ -124,6 +124,10 @@ type labelReplaceTransformation struct {
 	replacement string
 }
 
+func (t *labelReplaceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *labelReplaceTransformation) ClearCache() error {
 	panic("implement me")
 }

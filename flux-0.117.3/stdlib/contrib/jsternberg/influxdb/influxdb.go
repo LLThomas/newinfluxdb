@@ -94,6 +94,10 @@ type maskTransformation struct {
 	spec *maskProcedureSpec
 }
 
+func (t *maskTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *maskTransformation) ClearCache() error {
 	panic("implement me")
 }

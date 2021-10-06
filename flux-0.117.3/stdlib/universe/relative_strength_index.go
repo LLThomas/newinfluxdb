@@ -128,6 +128,10 @@ type relativeStrengthIndexTransformation struct {
 	lastVal []interface{}
 }
 
+func (t *relativeStrengthIndexTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *relativeStrengthIndexTransformation) ClearCache() error {
 	panic("implement me")
 }

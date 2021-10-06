@@ -3,7 +3,6 @@ package tsm1
 import (
 	"context"
 	"fmt"
-
 	"github.com/influxdata/influxdb/v2/influxql/query"
 	"github.com/influxdata/influxdb/v2/models"
 	"github.com/influxdata/influxdb/v2/pkg/metrics"

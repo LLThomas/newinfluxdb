@@ -72,6 +72,10 @@ type ToTransformation struct {
 	span               opentracing.Span
 }
 
+func (t *ToTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *ToTransformation) ClearCache() error {
 	panic("implement me")
 }

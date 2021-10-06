@@ -112,6 +112,10 @@ type kamaTransformation struct {
 	column string
 }
 
+func (t *kamaTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *kamaTransformation) ClearCache() error {
 	panic("implement me")
 }

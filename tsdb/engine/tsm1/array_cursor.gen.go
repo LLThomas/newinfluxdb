@@ -154,6 +154,9 @@ func (c *floatArrayAscendingCursor) nextTSM() *tsdb.FloatArray {
 	c.tsm.keyCursor.Next()
 	c.tsm.values, _ = c.tsm.keyCursor.ReadFloatArrayBlock(c.tsm.buf)
 	c.tsm.pos = 0
+
+	//log.Println(string(c.tsm.keyCursor.key), " current size and [0] MaxTime: ",len(c.tsm.keyCursor.current))
+
 	return c.tsm.values
 }
 

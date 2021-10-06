@@ -106,6 +106,10 @@ type cumulativeSumTransformation struct {
 	spec  CumulativeSumProcedureSpec
 }
 
+func (t *cumulativeSumTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *cumulativeSumTransformation) ClearCache() error {
 	panic("implement me")
 }

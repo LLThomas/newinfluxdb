@@ -15,6 +15,12 @@ func NewContextWithGroup(ctx context.Context, c *Group) context.Context {
 
 // GroupFromContext returns the Group associated with ctx or nil if no Group has been assigned.
 func GroupFromContext(ctx context.Context) *Group {
+
+	// for ctx is nil error
+	if ctx == nil {
+		return nil
+	}
+
 	c, _ := ctx.Value(groupKey).(*Group)
 	return c
 }

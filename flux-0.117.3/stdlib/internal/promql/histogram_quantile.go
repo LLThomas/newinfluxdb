@@ -118,6 +118,10 @@ type histogramQuantileTransformation struct {
 	spec HistogramQuantileProcedureSpec
 }
 
+func (t histogramQuantileTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t histogramQuantileTransformation) ClearCache() error {
 	panic("implement me")
 }

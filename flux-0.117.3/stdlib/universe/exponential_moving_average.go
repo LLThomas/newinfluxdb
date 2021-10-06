@@ -101,6 +101,10 @@ type exponentialMovingAverageTransformation struct {
 	n int64
 }
 
+func (t *exponentialMovingAverageTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *exponentialMovingAverageTransformation) ClearCache() error {
 	panic("implement me")
 }

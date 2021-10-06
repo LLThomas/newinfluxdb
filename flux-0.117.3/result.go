@@ -1,6 +1,7 @@
 package flux
 
 import (
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"io"
 
 	"github.com/apache/arrow/go/arrow/array"
@@ -48,6 +49,14 @@ type Table interface {
 	// Empty returns whether the table contains no records.
 	// This should not return true when the table is empty because of an error.
 	Empty() bool
+
+	// BlockIterator return blocks for one series key
+	BlockIterator(operationLable int) (ColReader, error)
+
+
+	Close()
+
+	Statistics() cursors.CursorStats
 }
 
 // BufferedTable is an implementation of Table that has all of its

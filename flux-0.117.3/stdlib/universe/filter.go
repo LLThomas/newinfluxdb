@@ -148,6 +148,10 @@ type filterTransformation struct {
 	alloc           *memory.Allocator
 }
 
+func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
 func (t *filterTransformation) ClearCache() error {
 	panic("implement me")
 }
