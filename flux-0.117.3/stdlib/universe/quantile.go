@@ -222,7 +222,7 @@ func createQuantileTransformation(id execute.DatasetID, mode execute.Accumulatio
 	if err != nil {
 		return nil, nil, errors.Newf(codes.Internal, "could not allocate memory for tdigest: %s", err)
 	}
-	t, d := execute.NewAggregateTransformationAndDataset(id, mode, agg, ps.AggregateConfig, a.Allocator())
+	t, d := execute.NewAggregateTransformationAndDataset(id, mode, agg, ps.AggregateConfig, a.Allocator(), whichPipeThread)
 	return t, d, nil
 }
 
@@ -287,7 +287,7 @@ func createExactQuantileAggTransformation(id execute.DatasetID, mode execute.Acc
 	agg := &ExactQuantileAgg{
 		Quantile: ps.Quantile,
 	}
-	t, d := execute.NewAggregateTransformationAndDataset(id, mode, agg, ps.AggregateConfig, a.Allocator())
+	t, d := execute.NewAggregateTransformationAndDataset(id, mode, agg, ps.AggregateConfig, a.Allocator(), whichPipeThread)
 	return t, d, nil
 }
 

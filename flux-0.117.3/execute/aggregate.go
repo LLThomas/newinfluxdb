@@ -16,6 +16,8 @@ type aggregateTransformation struct {
 	agg   Aggregate
 
 	config AggregateConfig
+
+	whichPipeThread int
 }
 
 func (t *aggregateTransformation) ClearCache() error {
@@ -51,19 +53,20 @@ func (c *AggregateConfig) ReadArgs(args flux.Arguments) error {
 	return nil
 }
 
-func NewAggregateTransformation(d Dataset, c TableBuilderCache, agg Aggregate, config AggregateConfig) *aggregateTransformation {
+func NewAggregateTransformation(d Dataset, c TableBuilderCache, agg Aggregate, config AggregateConfig, whichPipeThread int) *aggregateTransformation {
 	return &aggregateTransformation{
 		d:      d,
 		cache:  c,
 		agg:    agg,
 		config: config,
+		whichPipeThread: whichPipeThread,
 	}
 }
 
-func NewAggregateTransformationAndDataset(id DatasetID, mode AccumulationMode, agg Aggregate, config AggregateConfig, a *memory.Allocator) (*aggregateTransformation, Dataset) {
+func NewAggregateTransformationAndDataset(id DatasetID, mode AccumulationMode, agg Aggregate, config AggregateConfig, a *memory.Allocator, whichPipeThread int) (*aggregateTransformation, Dataset) {
 	cache := NewTableBuilderCache(a)
 	d := NewDataset(id, mode, cache)
-	return NewAggregateTransformation(d, cache, agg, config), d
+	return NewAggregateTransformation(d, cache, agg, config, whichPipeThread), d
 }
 
 func (t *aggregateTransformation) RetractTable(id DatasetID, key flux.GroupKey) error {
@@ -72,8 +75,152 @@ func (t *aggregateTransformation) RetractTable(id DatasetID, key flux.GroupKey) 
 }
 
 func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
-	for i := 0; i < len(tbls); i++ {
 
+	nextOperator := FindNextOperator(t.Label(), t.whichPipeThread)
+	resOperator := ResOperator
+
+	var tables []flux.Table
+	for i := 0; i < len(tbls); i++ {
+		tbl := tbls[i]
+
+		builder, created := t.cache.TableBuilder(tbl.Key())
+		if !created {
+			return errors.Newf(codes.FailedPrecondition, "aggregate found duplicate table with key: %v", tbl.Key())
+		}
+
+		if err := AddTableKeyCols(tbl.Key(), builder); err != nil {
+			return err
+		}
+
+		builderColMap := make([]int, len(t.config.Columns))
+		tableColMap := make([]int, len(t.config.Columns))
+		aggregates := make([]ValueFunc, len(t.config.Columns))
+		cols := tbl.Cols()
+		for j, label := range t.config.Columns {
+			idx := -1
+			for bj, bc := range cols {
+				if bc.Label == label {
+					idx = bj
+					break
+				}
+			}
+			if idx < 0 {
+				return errors.Newf(codes.FailedPrecondition, "column %q does not exist", label)
+			}
+			c := cols[idx]
+			if tbl.Key().HasCol(c.Label) {
+				return errors.New(codes.FailedPrecondition, "cannot aggregate columns that are part of the group key")
+			}
+			var vf ValueFunc
+			switch c.Type {
+			case flux.TBool:
+				vf = t.agg.NewBoolAgg()
+			case flux.TInt:
+				vf = t.agg.NewIntAgg()
+			case flux.TUInt:
+				vf = t.agg.NewUIntAgg()
+			case flux.TFloat:
+				vf = t.agg.NewFloatAgg()
+			case flux.TString:
+				vf = t.agg.NewStringAgg()
+			}
+			if vf == nil {
+				return errors.Newf(codes.FailedPrecondition, "unsupported aggregate column type %v", c.Type)
+			}
+			aggregates[j] = vf
+
+			var err error
+			builderColMap[j], err = builder.AddCol(flux.ColMeta{
+				Label: c.Label,
+				Type:  vf.Type(),
+			})
+			if err != nil {
+				return err
+			}
+			tableColMap[j] = idx
+		}
+
+		// just return t when calling BlockIterator for the first time
+		cr, _ := tbl.BlockIterator(0)
+		// use cr
+		for j := range t.config.Columns {
+			vf := aggregates[j]
+
+			tj := tableColMap[j]
+			c := tbl.Cols()[tj]
+
+			switch c.Type {
+			case flux.TBool:
+				vf.(DoBoolAgg).DoBool(cr.Bools(tj))
+			case flux.TInt:
+				vf.(DoIntAgg).DoInt(cr.Ints(tj))
+			case flux.TUInt:
+				vf.(DoUIntAgg).DoUInt(cr.UInts(tj))
+			case flux.TFloat:
+				vf.(DoFloatAgg).DoFloat(cr.Floats(tj))
+			case flux.TString:
+				vf.(DoStringAgg).DoString(cr.Strings(tj))
+			default:
+				return errors.Newf(codes.Invalid, "unsupported aggregate type %v", c.Type)
+			}
+		}
+		for j, vf := range aggregates {
+			bj := builderColMap[j]
+
+			// If the value is null, append a null to the column.
+			if vf.IsNull() {
+				if err := builder.AppendNil(bj); err != nil {
+					return err
+				}
+				continue
+			}
+
+			// Append aggregated value
+			switch vf.Type() {
+			case flux.TBool:
+				v := vf.(BoolValueFunc).ValueBool()
+				if err := builder.AppendBool(bj, v); err != nil {
+					return err
+				}
+			case flux.TInt:
+				v := vf.(IntValueFunc).ValueInt()
+				if err := builder.AppendInt(bj, v); err != nil {
+					return err
+				}
+			case flux.TUInt:
+				v := vf.(UIntValueFunc).ValueUInt()
+				if err := builder.AppendUInt(bj, v); err != nil {
+					return err
+				}
+			case flux.TFloat:
+				v := vf.(FloatValueFunc).ValueFloat()
+				if err := builder.AppendFloat(bj, v); err != nil {
+					return err
+				}
+			case flux.TString:
+				v := vf.(StringValueFunc).ValueString()
+				if err := builder.AppendString(bj, v); err != nil {
+					return err
+				}
+			}
+		}
+
+		if err := AppendKeyValues(tbl.Key(), builder); err != nil {
+			return err
+		}
+
+		table, _ := builder.Table()
+		tables = append(tables, table)
+
+		// release the table memory when calling BlockIterator next time
+		tbl.BlockIterator(1)
+	}
+
+	// send table to next operator
+	if nextOperator == nil {
+		resOperator.ProcessTbl(DatasetID{0}, tables)
+	} else {
+		nextOperator.PushToChannel(tables)
 	}
 
 	return nil

@@ -105,7 +105,7 @@ func createStddevTransformation(id execute.DatasetID, mode execute.AccumulationM
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
-	t, d := execute.NewAggregateTransformationAndDataset(id, mode, &StddevAgg{Mode: s.Mode}, s.AggregateConfig, a.Allocator())
+	t, d := execute.NewAggregateTransformationAndDataset(id, mode, &StddevAgg{Mode: s.Mode}, s.AggregateConfig, a.Allocator(), whichPipeThread)
 	return t, d, nil
 }
 

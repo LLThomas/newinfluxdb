@@ -1299,8 +1299,27 @@ func (t *ColListTable) Statistics() cursors.CursorStats {
 	panic("implement me")
 }
 
+const (
+	// first call just return t
+	FirstCall = iota
+	// if t have served, call t.Release() to release the memory t use
+)
+
 func (t *ColListTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
-	panic("implement me")
+
+	switch operationLabel {
+	case FirstCall:
+		if !atomic.CompareAndSwapInt32(&t.used, 0, 1) {
+			return nil, errors.New(codes.Internal, "table already read")
+		}
+		if t.nrows > 0 {
+			return t, nil
+		}
+		return nil, nil
+	default:
+		t.Release()
+		return nil, nil
+	}
 }
 
 func (t *ColListTable) RefCount(n int) {

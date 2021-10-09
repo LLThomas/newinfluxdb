@@ -89,7 +89,7 @@ func createCountTransformation(id execute.DatasetID, mode execute.AccumulationMo
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
 
-	t, d := execute.NewAggregateTransformationAndDataset(id, mode, new(CountAgg), s.AggregateConfig, a.Allocator())
+	t, d := execute.NewAggregateTransformationAndDataset(id, mode, new(CountAgg), s.AggregateConfig, a.Allocator(), whichPipeThread)
 	return t, d, nil
 }
 
