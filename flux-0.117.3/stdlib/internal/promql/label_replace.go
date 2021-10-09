@@ -102,7 +102,7 @@ func (s *LabelReplaceProcedureSpec) Copy() plan.ProcedureSpec {
 	return ns
 }
 
-func createLabelReplaceTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createLabelReplaceTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*LabelReplaceProcedureSpec)
 	if !ok {
 		return nil, nil, fmt.Errorf("invalid spec type %T", spec)

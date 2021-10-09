@@ -92,14 +92,15 @@ func createInterpolateTransformation(
 	id execute.DatasetID,
 	mode execute.AccumulationMode,
 	spec plan.ProcedureSpec,
-	a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+	a execute.Administration,
+	whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*LinearInterpolateProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
 	cache := execute.NewTableBuilderCache(a.Allocator())
 	d := execute.NewDataset(id, mode, cache)
-	t := NewInterpolateTransformation(d, cache, s)
+	t := NewInterpolateTransformation(d, cache, s, whichPipeThread)
 	return t, d, nil
 }
 
@@ -119,7 +120,7 @@ func (t *interpolateTransformation) ClearCache() error {
 	panic("implement me")
 }
 
-func NewInterpolateTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *LinearInterpolateProcedureSpec) *interpolateTransformation {
+func NewInterpolateTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *LinearInterpolateProcedureSpec, whichPipeThread int) *interpolateTransformation {
 	return &interpolateTransformation{
 		d:     d,
 		cache: cache,

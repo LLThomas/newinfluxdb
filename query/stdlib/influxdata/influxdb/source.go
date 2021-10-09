@@ -60,6 +60,7 @@ func (s *Source) Run(ctx context.Context) {
 	//	t.Finish(s.id, err)
 	//}
 
+	// send nil table to all first operator in each pipeline thread, so they can go to transport.go:319
 	mpl := execute.ExecutionState.ESmultiThreadPipeLine
 	for i := 0; i < len(mpl); i++ {
 		mpl[i].Worker[0].Finish(s.id, err)

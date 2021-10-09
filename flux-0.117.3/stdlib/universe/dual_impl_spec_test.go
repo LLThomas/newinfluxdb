@@ -45,14 +45,14 @@ func TestDualImplProcedureSpec(t *testing.T) {
 		t.Fatal(err)
 	}
 	usedDeprecated := true
-	fnNew := func(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+	fnNew := func(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 		if _, ok := spec.(*DualImplProcedureSpec); ok {
 			t.Fatal("spec received in fnNew should not be DualImplProcedureSpec")
 		}
 		usedDeprecated = false
 		return nil, nil, nil
 	}
-	fnDeprecated := func(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+	fnDeprecated := func(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 		if _, ok := spec.(*DualImplProcedureSpec); ok {
 			t.Fatal("spec received in fnDeprecated should not be DualImplProcedureSpec")
 		}

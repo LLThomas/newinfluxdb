@@ -48,14 +48,14 @@ func newDualImplSpec(fn plan.CreateProcedureSpec) plan.CreateProcedureSpec {
 }
 
 func createDualImplTf(fnNew execute.CreateTransformation, fnDeprecated execute.CreateTransformation) execute.CreateTransformation {
-	return func(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+	return func(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 		dualImplSpec, ok := spec.(*DualImplProcedureSpec)
 		if !ok {
-			return fnNew(id, mode, spec, a)
+			return fnNew(id, mode, spec, a, whichPipeThread)
 		}
 		if !dualImplSpec.UseDeprecated {
-			return fnNew(id, mode, dualImplSpec.ProcedureSpec, a)
+			return fnNew(id, mode, dualImplSpec.ProcedureSpec, a, whichPipeThread)
 		}
-		return fnDeprecated(id, mode, dualImplSpec.ProcedureSpec, a)
+		return fnDeprecated(id, mode, dualImplSpec.ProcedureSpec, a, whichPipeThread)
 	}
 }

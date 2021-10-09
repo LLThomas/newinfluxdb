@@ -21,8 +21,19 @@ var MyShards []*tsdb.Shard
 
 // global transformation operators line
 var OperatorIndex map[string]int = make(map[string]int)
-var OperatorMap map[string]*consecutiveTransport = make(map[string]*consecutiveTransport)
+var OperatorMap map[string]string = make(map[string]string)
 var ResOperator Transformation
+
+func FindNextOperator(currentOperator string, whichPipeThread int) *consecutiveTransport {
+	nextOperatorString := ""
+	if OperatorMap[currentOperator] != "" {
+		nextOperatorString = OperatorMap[currentOperator]
+	}
+	if nextOperatorString == "" {
+		return nil
+	}
+	return ExecutionState.ESmultiThreadPipeLine[whichPipeThread].Worker[OperatorIndex[nextOperatorString]]
+}
 
 type MultiThreadPipeLine struct {
 	// series key
@@ -86,7 +97,7 @@ func SplitSeriesKey(allSeriesKey []cursors.Cursor) map[cursors.Cursor]int {
 }
 
 // dispatch datasource to current and send to first operator
-func DispatchAndSend(ff func(whichPipeLine int))  {
+func DispatchAndSend(ff func(whichPipeThread int))  {
 	mpl := ExecutionState.ESmultiThreadPipeLine
 	l := ExecutionState.Len
 	for i := 0; i < len(mpl); i++ {

@@ -172,7 +172,7 @@ func (s *WindowProcedureSpec) Copy() plan.ProcedureSpec {
 	return &ns
 }
 
-func createWindowTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createWindowTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*WindowProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
@@ -212,6 +212,7 @@ func createWindowTransformation(id execute.DatasetID, mode execute.AccumulationM
 		s.StartColumn,
 		s.StopColumn,
 		s.CreateEmpty,
+		whichPipeThread,
 	)
 	return t, d, nil
 }
@@ -228,6 +229,8 @@ type fixedWindowTransformation struct {
 	startCol,
 	stopCol string
 	createEmpty bool
+
+	whichPipeThread int
 }
 
 func (t *fixedWindowTransformation) ClearCache() error {
@@ -243,6 +246,7 @@ func NewFixedWindowTransformation(
 	startCol,
 	stopCol string,
 	createEmpty bool,
+	whichPipeThread int,
 ) execute.Transformation {
 	t := &fixedWindowTransformation{
 		d:           d,
@@ -253,6 +257,7 @@ func NewFixedWindowTransformation(
 		startCol:    startCol,
 		stopCol:     stopCol,
 		createEmpty: createEmpty,
+		whichPipeThread: whichPipeThread,
 	}
 
 	if createEmpty {
@@ -367,8 +372,11 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 	numCount := make([]int, n)
 
 	// for send data
-	nextOperator := execute.OperatorMap[t.Label()]
+	//nextOperator := execute.OperatorMap[t.Label()]
+	//resOperator := execute.ResOperator
+	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
 	resOperator := execute.ResOperator
+
 	// for bounds stop data
 	concernBoundsStop := false
 	// update allCR or not
@@ -785,8 +793,8 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 	numCount := 0
 
 	// for send data
-	nextOperator := execute.OperatorMap[t.Label()]
-	resOperator := execute.ResOperator
+	//nextOperator := execute.OperatorMap[t.Label()]
+	//resOperator := execute.ResOperator
 
 	return tbl.Do(func(cr flux.ColReader) error {
 
@@ -819,12 +827,12 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 				}
 				rawDataIndex++
 			}
-			b, _ := builder.Table()
-			if nextOperator == nil {
-				resOperator.Process(execute.DatasetID{0}, b)
-			} else {
-				//nextOperator.PushToChannel(b)
-			}
+			//b, _ := builder.Table()
+			//if nextOperator == nil {
+			//	resOperator.Process(execute.DatasetID{0}, b)
+			//} else {
+			//	//nextOperator.PushToChannel(b)
+			//}
 			rawDataIndex = 0
 		}
 
@@ -900,12 +908,12 @@ func (t *fixedWindowTransformation) Process(id execute.DatasetID, tbl flux.Table
 				// reset concernBoundsStop
 				concernBoundsStop = false
 				// send to next operator
-				b, _ := builder.Table()
-				if nextOperator == nil {
-					resOperator.Process(execute.DatasetID{0}, b)
-				} else {
-					//nextOperator.PushToChannel(b)
-				}
+				//b, _ := builder.Table()
+				//if nextOperator == nil {
+				//	resOperator.Process(execute.DatasetID{0}, b)
+				//} else {
+				//	//nextOperator.PushToChannel(b)
+				//}
 			} else if rawDataIndex >= l {
 				lastWindowBound[numCount] = bnds
 				lastWindowKey[numCount] = key

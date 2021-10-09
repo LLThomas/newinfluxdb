@@ -102,7 +102,7 @@ type Administration interface {
 	Parents() []DatasetID
 }
 
-type CreateTransformation func(id DatasetID, mode AccumulationMode, spec plan.ProcedureSpec, a Administration) (Transformation, Dataset, error)
+type CreateTransformation func(id DatasetID, mode AccumulationMode, spec plan.ProcedureSpec, a Administration, whichPipeThread int) (Transformation, Dataset, error)
 
 var procedureToTransformation = make(map[plan.ProcedureKind]CreateTransformation)
 

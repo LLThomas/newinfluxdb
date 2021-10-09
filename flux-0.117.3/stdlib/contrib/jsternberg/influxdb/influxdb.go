@@ -80,18 +80,20 @@ func (s *maskProcedureSpec) Copy() plan.ProcedureSpec {
 	return ns
 }
 
-func createMaskTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createMaskTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*maskProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
-	return newMaskTransformation(s, id)
+	return newMaskTransformation(s, id, whichPipeThread)
 }
 
 type maskTransformation struct {
 	execute.ExecutionNode
 	d    *execute.PassthroughDataset
 	spec *maskProcedureSpec
+
+	whichPipeThread int
 }
 
 func (t *maskTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -102,10 +104,11 @@ func (t *maskTransformation) ClearCache() error {
 	panic("implement me")
 }
 
-func newMaskTransformation(spec *maskProcedureSpec, id execute.DatasetID) (execute.Transformation, execute.Dataset, error) {
+func newMaskTransformation(spec *maskProcedureSpec, id execute.DatasetID, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	t := &maskTransformation{
 		d:    execute.NewPassthroughDataset(id),
 		spec: spec,
+		whichPipeThread: whichPipeThread,
 	}
 	return t, t.d, nil
 }

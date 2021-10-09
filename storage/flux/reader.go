@@ -196,12 +196,13 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 	// construct table and send tables to first operator
 	allTables := make([][]flux.Table, 0)
 	mpl := execute.ExecutionState.ESmultiThreadPipeLine
-	ff := func(whichPipeLine int) {
+	ff := func(whichPipeThread int) {
 
-		tables := make([]flux.Table, 0)
-		for i := 0; i < len(mpl[whichPipeLine].Current); i++ {
+		//tables := make([]flux.Table, 0)
+		var tables []flux.Table
+		for i := 0; i < len(mpl[whichPipeThread].Current); i++ {
 			var table storageTable
-			cur := mpl[whichPipeLine].Current[i]
+			cur := mpl[whichPipeThread].Current[i]
 			index := pipeToGroupKey[cur]
 			key := allGroupKey[index]
 
@@ -231,7 +232,7 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 		}
 		// send table group to first operator
 		allTables = append(allTables, tables)
-		mpl[whichPipeLine].Worker[0].ProcessTbls(execute.DatasetID{0}, tables)
+		mpl[whichPipeThread].Worker[0].ProcessTbls(execute.DatasetID{0}, tables)
 	}
 	execute.DispatchAndSend(ff)
 

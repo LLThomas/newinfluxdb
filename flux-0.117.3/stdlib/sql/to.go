@@ -120,7 +120,7 @@ func newToSQLProcedure(qs flux.OperationSpec, a plan.Administration) (plan.Proce
 	return &ToSQLProcedureSpec{Spec: spec}, nil
 }
 
-func createToSQLTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createToSQLTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*ToSQLProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)

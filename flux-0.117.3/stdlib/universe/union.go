@@ -103,7 +103,7 @@ type unionParentState struct {
 	finished   bool
 }
 
-func createUnionTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createUnionTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*UnionProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Invalid, "invalid spec type %T", spec)

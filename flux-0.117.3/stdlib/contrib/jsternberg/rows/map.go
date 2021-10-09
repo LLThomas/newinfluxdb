@@ -84,12 +84,12 @@ func (s *MapProcedureSpec) Copy() plan.ProcedureSpec {
 	return ns
 }
 
-func createMapTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createMapTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*MapProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
-	return NewMapTransformation(a.Context(), s, id, a.Allocator())
+	return NewMapTransformation(a.Context(), s, id, a.Allocator(), whichPipeThread)
 }
 
 type mapTransformation struct {
@@ -98,6 +98,8 @@ type mapTransformation struct {
 	ctx context.Context
 	fn  *execute.RowMapFn
 	mem memory.Allocator
+
+	whichPipeThread int
 }
 
 func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -108,13 +110,14 @@ func (t *mapTransformation) ClearCache() error {
 	panic("implement me")
 }
 
-func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, id execute.DatasetID, mem memory.Allocator) (execute.Transformation, execute.Dataset, error) {
+func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, id execute.DatasetID, mem memory.Allocator, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	fn := execute.NewRowMapFn(spec.Fn.Fn, compiler.ToScope(spec.Fn.Scope))
 	t := &mapTransformation{
 		d:   execute.NewPassthroughDataset(id),
 		ctx: ctx,
 		fn:  fn,
 		mem: mem,
+		whichPipeThread: whichPipeThread,
 	}
 	return t, t.d, nil
 }

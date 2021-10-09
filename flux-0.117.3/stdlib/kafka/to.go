@@ -206,7 +206,7 @@ func newToKafkaProcedure(qs flux.OperationSpec, a plan.Administration) (plan.Pro
 	}
 	return &ToKafkaProcedureSpec{Spec: spec}, nil
 }
-func createToKafkaTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createToKafkaTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*ToKafkaProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)

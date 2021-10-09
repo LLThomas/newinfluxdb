@@ -39,7 +39,7 @@ type ToTransformation struct {
 	c execute.TableBuilderCache
 }
 
-func CreateToTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func CreateToTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	c := execute.NewTableBuilderCache(a.Allocator())
 	d := execute.NewDataset(id, mode, c)
 	return &ToTransformation{d: d, c: c}, d, nil

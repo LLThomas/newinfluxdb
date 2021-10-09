@@ -99,12 +99,13 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 	for i := 0; i < n; i++ {
 		e := es.consecutiveTransportSet[i]
 		OperatorIndex[e.Label()] = i
+		log.Println("OperatorIndex: ", i, e.Label())
 		if i+1 < n {
-			OperatorMap[e.Label()] = e
-			log.Println(OperatorMap[e.Label()].Label())
+			OperatorMap[e.Label()] = es.consecutiveTransportSet[i+1].Label()
 		} else {
-			OperatorMap[e.Label()] = nil
+			OperatorMap[e.Label()] = ""
 		}
+		log.Println("OperatorMap: ", i, OperatorMap[e.Label()])
 	}
 
 	//for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
@@ -275,7 +276,7 @@ func (v *createExecutionNodeVisitor) Visit(node plan.Node) error {
 			return fmt.Errorf("unsupported procedure %v", kind)
 		}
 
-		tr, ds, err := createTransformationFn(id, DiscardingMode, spec, ec)
+		tr, ds, err := createTransformationFn(id, DiscardingMode, spec, ec, 0)
 
 		if err != nil {
 			return err
@@ -303,7 +304,7 @@ func (v *createExecutionNodeVisitor) Visit(node plan.Node) error {
 			// add transport to each pipeline
 			for i := 0; i < len(v.es.ESmultiThreadPipeLine); i++ {
 
-				newtr, newds, newerr := createTransformationFn(id, DiscardingMode, spec, ec)
+				newtr, newds, newerr := createTransformationFn(id, DiscardingMode, spec, ec, i)
 				if newerr != nil {
 					return err
 				}
@@ -317,6 +318,8 @@ func (v *createExecutionNodeVisitor) Visit(node plan.Node) error {
 				newds.SetTriggerSpec(ppn.TriggerSpec)
 
 				t := newConsecutiveTransport(v.es.ctx, v.es.dispatcher, newtr, node, v.es.logger)
+				// set whichPipeThread value
+				t.whichPipeThread = i
 
 				//log.Printf("newConsecutiveTransport: %p\n", t.t)
 

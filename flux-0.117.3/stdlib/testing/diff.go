@@ -298,7 +298,7 @@ func copyTable(id execute.DatasetID, tbl flux.Table, alloc *memory.Allocator) (*
 	}, nil
 }
 
-func createDiffTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createDiffTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	if len(a.Parents()) != 2 {
 		return nil, nil, errors.New(codes.Internal, "diff should have exactly 2 parents")
 	}

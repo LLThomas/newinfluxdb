@@ -46,6 +46,8 @@ type consecutiveTransport struct {
 	inflight       int32
 
 	worker *pipeWorker
+	// whichPipeThread indicates which pipeline thread the consecutiveTransport belongs to
+	whichPipeThread int
 }
 
 func (t *consecutiveTransport) ProcessTbl(id DatasetID, tbls []flux.Table) error {
@@ -75,6 +77,7 @@ func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Trans
 		stack:    n.CallStack(),
 		finished: make(chan struct{}),
 		worker: newPipeWorker(t, logger),
+		whichPipeThread: 0,
 	}
 }
 
@@ -315,8 +318,8 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m []flux.Table
 		}
 
 		// send finishMsg to next operator before stop this pipe worker
-		//ConnectOperator(t.Label(), nil)
-		nextOperator := OperatorMap[t.Label()]
+		//nextOperator := OperatorMap[t.Label()]
+		nextOperator := FindNextOperator(t.Label(), t.whichPipeThread)
 		if nextOperator == nil {
 			atomic.AddInt32(&ExecutionState.numFinishMsgCount, 1)
 

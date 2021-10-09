@@ -168,12 +168,12 @@ func (s *TableProcedureSpec) Copy() plan.ProcedureSpec {
 	return ns
 }
 
-func createTableTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createTableTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*TableProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
-	return NewTableTransformation(a.Context(), s, id, a.Allocator())
+	return NewTableTransformation(a.Context(), s, id, a.Allocator(), whichPipeThread)
 }
 
 type tableTransformation struct {
@@ -182,6 +182,8 @@ type tableTransformation struct {
 	spec *TableProcedureSpec
 	ctx  context.Context
 	mem  memory.Allocator
+
+	whichPipeThread int
 }
 
 func (t *tableTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -192,12 +194,13 @@ func (t *tableTransformation) ClearCache() error {
 	panic("implement me")
 }
 
-func NewTableTransformation(ctx context.Context, spec *TableProcedureSpec, id execute.DatasetID, mem memory.Allocator) (execute.Transformation, execute.Dataset, error) {
+func NewTableTransformation(ctx context.Context, spec *TableProcedureSpec, id execute.DatasetID, mem memory.Allocator, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	t := &tableTransformation{
 		d:    execute.NewPassthroughDataset(id),
 		spec: spec,
 		ctx:  ctx,
 		mem:  mem,
+		whichPipeThread: whichPipeThread,
 	}
 	return t, t.d, nil
 }

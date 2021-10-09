@@ -18,10 +18,6 @@ type aggregateTransformation struct {
 	config AggregateConfig
 }
 
-func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
-	panic("implement me")
-}
-
 func (t *aggregateTransformation) ClearCache() error {
 	return t.d.ClearCache()
 }
@@ -73,6 +69,14 @@ func NewAggregateTransformationAndDataset(id DatasetID, mode AccumulationMode, a
 func (t *aggregateTransformation) RetractTable(id DatasetID, key flux.GroupKey) error {
 	//TODO(nathanielc): Store intermediate state for retractions
 	return t.d.RetractTable(key)
+}
+
+func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
+	for i := 0; i < len(tbls); i++ {
+
+	}
+
+	return nil
 }
 
 func (t *aggregateTransformation) Process(id DatasetID, tbl flux.Table) error {
@@ -202,13 +206,13 @@ func (t *aggregateTransformation) Process(id DatasetID, tbl flux.Table) error {
 	}
 
 	err := AppendKeyValues(tbl.Key(), builder)
-	b, _ := builder.Table()
-	nextOperator := OperatorMap[t.Label()]
-	if nextOperator == nil {
-		ResOperator.Process(DatasetID{0}, b)
-	} else {
-		//nextOperator.PushToChannel(b)
-	}
+	//b, _ := builder.Table()
+	//nextOperator := OperatorMap[t.Label()]
+	//if nextOperator == nil {
+	//	ResOperator.Process(DatasetID{0}, b)
+	//} else {
+	//	//nextOperator.PushToChannel(b)
+	//}
 	return err
 }
 

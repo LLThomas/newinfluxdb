@@ -21,6 +21,9 @@ type result struct {
 
 func (s *result) ProcessTbl(id DatasetID, tbls []flux.Table) error {
 	for i := 0; i < len(tbls); i++ {
+
+		//log.Println(tbls[i].Key())
+
 		select {
 		case s.tables <- resultMessage{
 			table: tbls[i],

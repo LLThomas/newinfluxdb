@@ -132,7 +132,7 @@ type assertEqualsParentState struct {
 	finished   bool
 }
 
-func createAssertEqualsTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createAssertEqualsTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	if len(a.Parents()) != 2 {
 		return nil, nil, errors.New(codes.Internal, "assertEquals should have exactly 2 parents")
 	}

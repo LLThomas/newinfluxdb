@@ -134,14 +134,14 @@ func (s *DurationProcedureSpec) Copy() plan.ProcedureSpec {
 	}
 }
 
-func createDurationTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createDurationTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*DurationProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
 	cache := execute.NewTableBuilderCache(a.Allocator())
 	d := execute.NewDataset(id, mode, cache)
-	t := NewDurationTransformation(d, cache, s)
+	t := NewDurationTransformation(d, cache, s, whichPipeThread)
 	return t, d, nil
 }
 
@@ -156,6 +156,7 @@ type durationTransformation struct {
 	stopColumn string
 	stop       values.Time
 	isStop     bool
+	whichPipeThread int
 }
 
 func (t *durationTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -166,7 +167,7 @@ func (t *durationTransformation) ClearCache() error {
 	panic("implement me")
 }
 
-func NewDurationTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *DurationProcedureSpec) *durationTransformation {
+func NewDurationTransformation(d execute.Dataset, cache execute.TableBuilderCache, spec *DurationProcedureSpec, whichPipeThread int) *durationTransformation {
 	return &durationTransformation{
 		d:     d,
 		cache: cache,
@@ -177,6 +178,7 @@ func NewDurationTransformation(d execute.Dataset, cache execute.TableBuilderCach
 		stopColumn: spec.StopColumn,
 		stop:       values.ConvertTime(spec.Stop.Absolute),
 		isStop:     spec.IsStop,
+		whichPipeThread: whichPipeThread,
 	}
 }
 

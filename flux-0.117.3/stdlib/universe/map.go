@@ -96,14 +96,14 @@ func (s *MapProcedureSpec) Copy() plan.ProcedureSpec {
 	return ns
 }
 
-func createMapTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration) (execute.Transformation, execute.Dataset, error) {
+func createMapTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	s, ok := spec.(*MapProcedureSpec)
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
 	cache := execute.NewTableBuilderCache(a.Allocator())
 	d := execute.NewDataset(id, mode, cache)
-	t, err := NewMapTransformation(a.Context(), s, d, cache)
+	t, err := NewMapTransformation(a.Context(), s, d, cache, whichPipeThread)
 
 	if err != nil {
 		return nil, nil, err
@@ -118,6 +118,8 @@ type mapTransformation struct {
 	ctx      context.Context
 	fn       *execute.RowMapFn
 	mergeKey bool
+
+	whichPipeThread int
 }
 
 func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -128,7 +130,7 @@ func (t *mapTransformation) ClearCache() error {
 	return t.ClearCache()
 }
 
-func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, d execute.Dataset, cache execute.TableBuilderCache) (*mapTransformation, error) {
+func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, d execute.Dataset, cache execute.TableBuilderCache, whichPipeThread int) (*mapTransformation, error) {
 	fn := execute.NewRowMapFn(spec.Fn.Fn, compiler.ToScope(spec.Fn.Scope))
 	return &mapTransformation{
 		d:        d,
@@ -136,6 +138,7 @@ func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, d execute
 		fn:       fn,
 		ctx:      ctx,
 		mergeKey: spec.MergeKey,
+		whichPipeThread: whichPipeThread,
 	}, nil
 }
 
@@ -208,14 +211,14 @@ func (t *mapTransformation) Process(id execute.DatasetID, tbl flux.Table) error 
 		}
 
 
-		b, _ := builder.Table()
-		//log.Println("map: ", b.Key())
-		nextOperator := execute.OperatorMap[t.Label()]
-		if nextOperator == nil {
-			execute.ResOperator.Process(execute.DatasetID{0}, b)
-		} else {
-			//nextOperator.PushToChannel(b)
-		}
+		//b, _ := builder.Table()
+		////log.Println("map: ", b.Key())
+		//nextOperator := execute.OperatorMap[t.Label()]
+		//if nextOperator == nil {
+		//	execute.ResOperator.Process(execute.DatasetID{0}, b)
+		//} else {
+		//	//nextOperator.PushToChannel(b)
+		//}
 		return nil
 	})
 }
