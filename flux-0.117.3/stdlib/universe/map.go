@@ -122,12 +122,8 @@ type mapTransformation struct {
 	whichPipeThread int
 }
 
-func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
-	panic("implement me")
-}
-
 func (t *mapTransformation) ClearCache() error {
-	return t.ClearCache()
+	return t.d.ClearCache()
 }
 
 func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, d execute.Dataset, cache execute.TableBuilderCache, whichPipeThread int) (*mapTransformation, error) {
@@ -144,6 +140,88 @@ func NewMapTransformation(ctx context.Context, spec *MapProcedureSpec, d execute
 
 func (t *mapTransformation) RetractTable(id execute.DatasetID, key flux.GroupKey) error {
 	return t.d.RetractTable(key)
+}
+
+func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+
+	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	resOperator := execute.ResOperator
+
+	var tables []flux.Table
+	for k := 0; k < len(tbls); k++ {
+		tbl := tbls[k]
+		// Prepare the functions for the column types.
+		cols := tbl.Cols()
+		fn, err := t.fn.Prepare(cols)
+		if err != nil {
+			// TODO(nathanielc): Should we not fail the query for failed compilation?
+			return err
+		}
+
+		var on map[string]bool
+		// just return t when calling BlockIterator for the first time
+		cr, _ := tbl.BlockIterator(0)
+		var builder execute.TableBuilder
+		var created bool = false
+		l := cr.Len()
+		for i := 0; i < l; i++ {
+			m, err := fn.Eval(t.ctx, i, cr)
+			if err != nil {
+				return errors.Wrap(err, codes.Invalid, "failed to evaluate map function")
+			}
+
+			// If we haven't determined the columns to group on, do that now.
+			if on == nil {
+				var err error
+				on, err = t.groupOn(tbl.Key(), m.Type())
+				if err != nil {
+					return err
+				}
+			}
+
+			key := groupKeyForObject(i, cr, m, on)
+			builder, created = t.cache.TableBuilder(key)
+			if created {
+				if err := t.createSchema(fn, builder, m); err != nil {
+					return err
+				}
+			}
+
+			for j, c := range builder.Cols() {
+				v, ok := m.Get(c.Label)
+				if !ok {
+					if idx := execute.ColIdx(c.Label, tbl.Key().Cols()); t.mergeKey && idx >= 0 {
+						v = tbl.Key().Value(idx)
+					} else {
+						// This should be unreachable
+						return errors.Newf(codes.Internal, "could not find value for column %q", c.Label)
+					}
+				}
+				if !v.IsNull() && c.Type.String() != v.Type().Nature().String() {
+					return errors.Newf(codes.Internal, "column %s:%s is not of type %v",
+						c.Label, c.Type, v.Type(),
+					)
+				}
+				if err := builder.AppendValue(j, v); err != nil {
+					return err
+				}
+			}
+		}
+		table, _ := builder.Table()
+		tables = append(tables, table)
+
+		// release the table memory when calling BlockIterator next time
+		tbl.BlockIterator(1)
+	}
+
+	// send table to next operator
+	if nextOperator == nil {
+		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+	} else {
+		nextOperator.PushToChannel(tables)
+	}
+
+	return nil
 }
 
 func (t *mapTransformation) Process(id execute.DatasetID, tbl flux.Table) error {

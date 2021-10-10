@@ -7,7 +7,6 @@ import (
 	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"log"
 	"reflect"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -349,11 +348,8 @@ func pipeProcess(ctx context.Context, t Transformation, m []flux.Table) (finishe
 	// 4. so send finishMsg and clear all data in dataset should be done early
 	if m == nil {
 
-		// TODO: sometimes this will break the system (bug)
 		// clear cache data of this operator
-		if !strings.Contains(t.Label(), "map") {
-			err = t.ClearCache()
-		}
+		err = t.ClearCache()
 
 		finished = true
 		return
