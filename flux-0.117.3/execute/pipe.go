@@ -89,7 +89,7 @@ func (p *pipeWorker) setErr(err error) {
 
 func (p *pipeWorker) Stop() error {
 
-	//log.Println("stop pipeWorker")
+	//log.Println("stop pipeWorker: ", p.t.Label())
 
 	// Check if this is the first time invoking this method.
 	p.mu.Lock()

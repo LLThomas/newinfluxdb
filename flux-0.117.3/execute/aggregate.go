@@ -7,6 +7,8 @@ import (
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/memory"
 	"github.com/influxdata/flux/plan"
+	"log"
+	"os"
 )
 
 type aggregateTransformation struct {
@@ -76,6 +78,11 @@ func (t *aggregateTransformation) RetractTable(id DatasetID, key flux.GroupKey) 
 
 func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
 
+	//log.Println("aggregate: ")
+	//for k := 0; k < len(tbls); k++ {
+	//	log.Println(tbls[k].Key())
+	//}
+
 	nextOperator := FindNextOperator(t.Label(), t.whichPipeThread)
 	resOperator := ResOperator
 
@@ -142,6 +149,14 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 
 		// just return t when calling BlockIterator for the first time
 		cr, _ := tbl.BlockIterator(0)
+
+		// If cr is nil, it means we loss the data in original data file.
+		// In case of interrupt the program, we neglect this condition.
+		if cr == nil {
+			tbl.BlockIterator(1)
+			continue
+		}
+
 		// use cr
 		for j := range t.config.Columns {
 			vf := aggregates[j]
@@ -157,6 +172,12 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 			case flux.TUInt:
 				vf.(DoUIntAgg).DoUInt(cr.UInts(tj))
 			case flux.TFloat:
+
+				if cr == nil {
+					log.Println("nil: ", t.label)
+					os.Exit(0)
+				}
+
 				vf.(DoFloatAgg).DoFloat(cr.Floats(tj))
 			case flux.TString:
 				vf.(DoStringAgg).DoString(cr.Strings(tj))

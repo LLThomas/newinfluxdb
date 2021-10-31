@@ -221,7 +221,7 @@ type PassthroughDataset struct {
 }
 
 func (d *PassthroughDataset) ClearCache() error {
-	panic("implement me")
+	return nil
 }
 
 // NewPassthroughDataset constructs a new PassthroughDataset.

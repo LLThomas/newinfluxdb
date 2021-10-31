@@ -362,6 +362,12 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 		allLen[i] = cr.Len()
 	}
 
+	//log.Println("allLen")
+	//for i := 0; i < len(allLen); i++ {
+	//	log.Println(allLen[i])
+	//}
+	//log.Println("*************************")
+
 	// for over block data
 	lastWindowKey := make([][]flux.GroupKey, n)
 	lastWindowBound := make([][]interval.Bounds, n)
@@ -385,6 +391,8 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 	rightBound := values.Time(allCR[0].Times(timeIdx).Value(0))
 	leftBound := values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
 	tmpLeftBound := leftBound
+	// update leftBound or not
+	updateLeftBound := false
 
 	//log.Println("1 leftBound, rightBound: ", leftBound, rightBound)
 	//count := 0
@@ -400,6 +408,13 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 		if rightBound >= t.bounds.Stop() {
 			rightBound = t.bounds.Stop()
 			concernBoundsStop = true
+
+			// If leftBound is still less than t.bounds.Start(), we should update it. (in case of multiply same tables are processed)
+			if !updateLeftBound && leftBound < t.bounds.Start() {
+				leftBound = t.bounds.Start()
+				updateLeftBound = true
+			}
+
 		}
 
 		// if leftbound execeeds the block bound, update info
@@ -425,6 +440,13 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 			if breakTag {
 				break
 			}
+
+			//log.Println("allLen")
+			//for i := 0; i < len(allLen); i++ {
+			//	log.Println(allLen[i])
+			//}
+			//log.Println("*************************")
+
 		}
 
 		// if updateCRTag is true, fill uncompleted window with next block
@@ -463,6 +485,16 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 					if nextOperator == nil {
 						resOperator.ProcessTbl(execute.DatasetID{0}, tables)
 					} else {
+
+						//log.Println("window send(2):")
+						//if len(tables) == 0 {
+						//	log.Println("window exit(2)")
+						//	os.Exit(0)
+						//}
+						//for kkk := 0; kkk < len(tables); kkk++ {
+						//	log.Println(tables[kkk].Key())
+						//}
+
 						nextOperator.PushToChannel(tables)
 					}
 				}
@@ -478,10 +510,13 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 				leftBound = values.Time(rightBound.Sub(values.Time(t.w.Period().Nanoseconds())).Nanoseconds())
 			}
 			updateCRTag = false
+			updateLeftBound = false
 		}
 
 		// store all window table in each block
 		var tables []flux.Table
+
+		//log.Println("tmpLeftBound - leftBound - rightBound", tmpLeftBound, leftBound, rightBound)
 
 		// handle block group
 		for i := 0; i < n; i++ {
@@ -554,6 +589,17 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 			if nextOperator == nil {
 				resOperator.ProcessTbl(execute.DatasetID{0}, tables)
 			} else {
+
+				//log.Println("window send(1):")
+				//if len(tables) == 0 {
+				//	log.Println("window exit(1)")
+				//	os.Exit(0)
+				//}
+				//for kkk := 0; kkk < len(tables); kkk++ {
+				//	log.Println(tables[kkk].Key())
+				//}
+				//log.Println("**end**")
+
 				nextOperator.PushToChannel(tables)
 			}
 		}

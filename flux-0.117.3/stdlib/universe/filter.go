@@ -3,7 +3,6 @@ package universe
 import (
 	"context"
 	"fmt"
-
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/bitutil"
 	arrowmem "github.com/apache/arrow/go/arrow/memory"
@@ -22,6 +21,7 @@ import (
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
+	"log"
 )
 
 const FilterKind = "filter"
@@ -146,14 +146,12 @@ type filterTransformation struct {
 	fn              *execute.RowPredicateFn
 	keepEmptyTables bool
 	alloc           *memory.Allocator
-}
 
-func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
-	panic("implement me")
+	whichPipeThread int
 }
 
 func (t *filterTransformation) ClearCache() error {
-	panic("implement me")
+	return t.d.ClearCache()
 }
 
 func NewFilterTransformation(ctx context.Context, spec *FilterProcedureSpec, id execute.DatasetID, alloc *memory.Allocator) (execute.Transformation, execute.Dataset, error) {
@@ -170,6 +168,68 @@ func NewFilterTransformation(ctx context.Context, spec *FilterProcedureSpec, id 
 
 func (t *filterTransformation) RetractTable(id execute.DatasetID, key flux.GroupKey) error {
 	return t.d.RetractTable(key)
+}
+
+func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+
+	//log.Println("filter whichPipeThread: ", t.whichPipeThread)
+
+	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	resOperator := execute.ResOperator
+
+	// Prepare the function for the column types.
+	cols := tbls[0].Cols()
+	fn, err := t.fn.Prepare(cols)
+	if err != nil {
+		// TODO(nathanielc): Should we not fail the query for failed compilation?
+		return err
+	}
+
+	// Retrieve the inferred input type for the function.
+	// If all of the inferred inputs are part of the group
+	// key, we can evaluate a record with only the group key.
+	if t.canFilterByKey(fn, tbls[0]) {
+		return t.anotherFilterByKey(tbls)
+	}
+
+	var tables []flux.Table
+	for k := 0; k < len(tbls); k++ {
+
+		// Prefill the columns that can be inferred from the group key.
+		// Retrieve the input type from the function and record the indices
+		// that need to be obtained from the columns.
+		record := values.NewObject(fn.InputType())
+		indices := make([]int, 0, len(tbls[k].Cols())-len(tbls[k].Key().Cols()))
+		for j, c := range tbls[k].Cols() {
+			if idx := execute.ColIdx(c.Label, tbls[k].Key().Cols()); idx >= 0 {
+				record.Set(c.Label, tbls[k].Key().Value(idx))
+				continue
+			}
+			indices = append(indices, j)
+		}
+
+		// Filter the table and pass in the indices we have to read.
+		table, err := t.filterTable(fn, tbls[k], record, indices)
+		if err != nil {
+			return err
+		} else if table.Empty() && !t.keepEmptyTables {
+			// Drop the table.
+			return nil
+		}
+
+		tables = append(tables, table)
+	}
+
+	// send table to next operator
+	if nextOperator == nil {
+		log.Println("filter resOperator: ", tables[0].Key())
+		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+	} else {
+		log.Println("filter PushToChannel: ", tables[0].Key())
+		nextOperator.PushToChannel(tables)
+	}
+
+	return nil
 }
 
 func (t *filterTransformation) Process(id execute.DatasetID, tbl flux.Table) error {
@@ -244,6 +304,58 @@ func (t *filterTransformation) canFilterByKey(fn *execute.RowPredicatePreparedFn
 
 	// All referenced keys were part of the group key.
 	return true
+}
+
+func (t *filterTransformation) anotherFilterByKey(tbls []flux.Table) error {
+	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	resOperator := execute.ResOperator
+
+	var tables []flux.Table
+	for k := 0; k < len(tbls); k++ {
+		key := tbls[k].Key()
+		cols := key.Cols()
+		fn, err := t.fn.Prepare(cols)
+		if err != nil {
+			return err
+		}
+
+		record, err := values.BuildObjectWithSize(len(cols), func(set values.ObjectSetter) error {
+			for j, c := range cols {
+				set(c.Label, key.Value(j))
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		v, err := fn.Eval(t.ctx, record)
+		if err != nil {
+			return err
+		}
+
+		if !v {
+			tbls[k].Done()
+			if !t.keepEmptyTables {
+				return nil
+			}
+			// If we are supposed to keep empty tables, produce
+			// an empty table with this group key and send it
+			// to the next transformation to process it.
+			tbls[k] = execute.NewEmptyTable(tbls[k].Key(), tbls[k].Cols())
+		}
+
+		tables = append(tables, tbls[k])
+	}
+
+	// send table to next operator
+	if nextOperator == nil {
+		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+	} else {
+		nextOperator.PushToChannel(tables)
+	}
+
+	return nil
 }
 
 func (t *filterTransformation) filterByKey(tbl flux.Table) error {
