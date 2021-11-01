@@ -331,6 +331,8 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m []flux.Table
 			nextOperator.PushToChannel(nil)
 		}
 
+		// log.Println("transport: ", t.whichPipeThread, t.t.Label(), " call close(t.finished)")
+
 		// close t.finished will close channel in executor.go (case <-t.Finished())
 		close(t.finished)
 
