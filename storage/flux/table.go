@@ -110,9 +110,6 @@ func (t *table) do(f func(flux.ColReader) error, advance func() bool) error {
 }
 
 func (t *table) Done() {
-
-	log.Println(666)
-
 	// Mark the table as having been used. If this has already
 	// been done, then nothing needs to be done.
 	if atomic.CompareAndSwapInt32(&t.used, 0, 1) {

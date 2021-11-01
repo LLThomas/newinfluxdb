@@ -90,13 +90,9 @@ func (t *floatTable) BlockIterator(operationLabel int) (flux.ColReader, error) {
 		}
 		return nil, t.err
 	default:
-
-		log.Println("table.gen.go: ", t.key.String())
-
 		t.colBufs.Release()
 		t.colBufs = nil
 		t.closeDone()
-		log.Println("table.gen.go: done")
 		return nil, t.err
 	}
 }
