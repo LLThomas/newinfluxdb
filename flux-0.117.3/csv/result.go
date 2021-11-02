@@ -961,7 +961,7 @@ func (e *ResultEncoder) Encode(w io.Writer, result flux.Result) (int64, error) {
 
 		if err := tbl.Do(func(cr flux.ColReader) error {
 
-			//log.Println("csv/result: ", cr.Key(), cr.Len())
+			// log.Println("csv/result: ", cr.Key(), cr.Len())
 
 			record := row[defaultRecordStartIdx:]
 			l := cr.Len()

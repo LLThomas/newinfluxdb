@@ -9,7 +9,6 @@ package storageflux
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -129,9 +128,6 @@ func (t *floatTable) Do(f func(flux.ColReader) error) error {
 }
 
 func (t *floatTable) advance() bool {
-
-	//log.Println("advance(): ", t.key.String())
-
 	a := t.cur.Next()
 	l := a.Len()
 	if l == 0 {

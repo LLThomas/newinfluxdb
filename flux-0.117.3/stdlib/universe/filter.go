@@ -21,7 +21,6 @@ import (
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
-	"log"
 )
 
 const FilterKind = "filter"
@@ -222,10 +221,10 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 
 	// send table to next operator
 	if nextOperator == nil {
-		log.Println("filter resOperator: ", tables[0].Key())
+		// log.Println("filter resOperator: ", tables[0].Key())
 		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
 	} else {
-		log.Println("filter PushToChannel: ", tables[0].Key())
+		// log.Println("filter PushToChannel: ", tables[0].Key())
 		nextOperator.PushToChannel(tables)
 	}
 

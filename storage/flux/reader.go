@@ -159,126 +159,174 @@ func (fi *filterIterator) Do(f func(flux.Table) error) error {
 }
 
 func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.ResultSet) error {
-	// these resources must be closed if not nil on return
-	//var (
-	//	cur   cursors.Cursor
-	//	table storageTable
-	//)
 
-	defer func() {
-		//if table != nil {
-		//	table.Close()
-		//}
-		//if cur != nil {
-		//	cur.Close()
-		//}
-		rs.Close()
-		fi.cache.Release()
-	}()
+	if !execute.WindowModel {
+		// these resources must be closed if not nil on return
+		var (
+			cur   cursors.Cursor
+			table storageTable
+		)
 
-	// get all series key and put them in an array
-	bnds := fi.spec.Bounds
-	allGroupKey := make([]flux.GroupKey, 0)
-	allTags := make([]models.Tags, 0)
-	allSeriesKey := make([]cursors.Cursor, 0)
-	for rs.Next() {
-		execute.WG.Add(1)
-		tmpTags := make(models.Tags, len(rs.Tags()))
-		copy(tmpTags, rs.Tags())
-		allSeriesKey = append(allSeriesKey, rs.Cursor())
-		allTags = append(allTags, tmpTags)
-		allGroupKey = append(allGroupKey, defaultGroupKeyForSeries(rs.Tags(), bnds))
-	}
+		defer func() {
+			if table != nil {
+				table.Close()
+			}
+			if cur != nil {
+				cur.Close()
+			}
+			rs.Close()
+			fi.cache.Release()
+		}()
 
-	// split series key for each pipeline
-	pipeToGroupKey := execute.SplitSeriesKey(allSeriesKey)
+	READ:
+		for rs.Next() {
+			cur = rs.Cursor()
+			if cur == nil {
+				// no data for series key + field combination
+				continue
+			}
 
-	// construct table and send tables to first operator
-	allTables := make([][]flux.Table, 0)
-	mpl := execute.ExecutionState.ESmultiThreadPipeLine
-	ff := func(whichPipeThread int) {
-
-		//tables := make([]flux.Table, 0)
-		var tables []flux.Table
-		for i := 0; i < len(mpl[whichPipeThread].Current); i++ {
-			var table storageTable
-			cur := mpl[whichPipeThread].Current[i]
-			index := pipeToGroupKey[cur]
-			key := allGroupKey[index]
-
-			//log.Println("reader.go table key index: ", key.String(), index)
-
+			bnds := fi.spec.Bounds
+			key := defaultGroupKeyForSeries(rs.Tags(), bnds)
 			done := make(chan struct{})
 			switch typedCur := cur.(type) {
 			case cursors.IntegerArrayCursor:
 				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TInt)
-				table = newIntegerTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				table = newIntegerTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
 			case cursors.FloatArrayCursor:
 				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TFloat)
-				table = newFloatTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				table = newFloatTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
 			case cursors.UnsignedArrayCursor:
 				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TUInt)
-				table = newUnsignedTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				table = newUnsignedTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
 			case cursors.BooleanArrayCursor:
 				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TBool)
-				table = newBooleanTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				table = newBooleanTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
 			case cursors.StringArrayCursor:
 				cols, defs := determineTableColsForSeries(rs.Tags(), flux.TString)
-				table = newStringTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				table = newStringTable(done, typedCur, bnds, key, cols, rs.Tags(), defs, fi.cache, fi.alloc)
 			default:
 				panic(fmt.Sprintf("unreachable: %T", typedCur))
 			}
-			tables = append(tables, table)
-		}
-		// send table group to first operator
-		allTables = append(allTables, tables)
-		mpl[whichPipeThread].Worker[0].ProcessTbls(execute.DatasetID{0}, tables)
-	}
-	execute.DispatchAndSend(ff)
 
-	// wait all table run closeDone() in table.go:84
-	execute.WG.Wait()
+			cur = nil
 
-	// after all tables call closeDone(), close all tables
-	// if table doesn't call Close(), there will be some problem when closing shard
-	for i := 0; i < len(allTables); i++ {
-		for j := 0; j < len(allTables[i]); j++ {
-			stats := allTables[i][j].Statistics()
+			if !table.Empty() {
+				if err := f(table); err != nil {
+					table.Close()
+					table = nil
+					return err
+				}
+				select {
+				case <-done:
+				case <-fi.ctx.Done():
+					table.Cancel()
+					break READ
+				}
+			}
+
+			stats := table.Statistics()
 			fi.stats.ScannedValues += stats.ScannedValues
 			fi.stats.ScannedBytes += stats.ScannedBytes
-			allTables[i][j].Close()
-			allTables[i][j] = nil
+			table.Close()
+			table = nil
 		}
+		return rs.Err()
+	} else {
+		defer func() {
+			//if table != nil {
+			//	table.Close()
+			//}
+			//if cur != nil {
+			//	cur.Close()
+			//}
+			rs.Close()
+			fi.cache.Release()
+		}()
+
+		// get all series key and put them in an array
+		bnds := fi.spec.Bounds
+		allGroupKey := make([]flux.GroupKey, 0)
+		allTags := make([]models.Tags, 0)
+		allSeriesKey := make([]cursors.Cursor, 0)
+		for rs.Next() {
+			execute.WG.Add(1)
+			tmpTags := make(models.Tags, len(rs.Tags()))
+			copy(tmpTags, rs.Tags())
+			allSeriesKey = append(allSeriesKey, rs.Cursor())
+			allTags = append(allTags, tmpTags)
+			allGroupKey = append(allGroupKey, defaultGroupKeyForSeries(rs.Tags(), bnds))
+		}
+
+		// split series key for each pipeline
+		pipeToGroupKey := execute.SplitSeriesKey(allSeriesKey)
+
+		// construct table and send tables to first operator
+		allTables := make([][]flux.Table, 0)
+		mpl := execute.ExecutionState.ESmultiThreadPipeLine
+		ff := func(whichPipeThread int) {
+
+			//tables := make([]flux.Table, 0)
+			var tables []flux.Table
+			for i := 0; i < len(mpl[whichPipeThread].Current); i++ {
+				var table storageTable
+				cur := mpl[whichPipeThread].Current[i]
+				index := pipeToGroupKey[cur]
+				key := allGroupKey[index]
+
+				//log.Println("reader.go table key index: ", key.String(), index)
+
+				done := make(chan struct{})
+				switch typedCur := cur.(type) {
+				case cursors.IntegerArrayCursor:
+					cols, defs := determineTableColsForSeries(rs.Tags(), flux.TInt)
+					table = newIntegerTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				case cursors.FloatArrayCursor:
+					cols, defs := determineTableColsForSeries(rs.Tags(), flux.TFloat)
+					table = newFloatTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				case cursors.UnsignedArrayCursor:
+					cols, defs := determineTableColsForSeries(rs.Tags(), flux.TUInt)
+					table = newUnsignedTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				case cursors.BooleanArrayCursor:
+					cols, defs := determineTableColsForSeries(rs.Tags(), flux.TBool)
+					table = newBooleanTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				case cursors.StringArrayCursor:
+					cols, defs := determineTableColsForSeries(rs.Tags(), flux.TString)
+					table = newStringTable(done, typedCur, bnds, key, cols, allTags[index], defs, fi.cache, fi.alloc)
+				default:
+					panic(fmt.Sprintf("unreachable: %T", typedCur))
+				}
+				tables = append(tables, table)
+			}
+			// send table group to first operator
+			allTables = append(allTables, tables)
+			mpl[whichPipeThread].Worker[0].ProcessTbls(execute.DatasetID{0}, tables)
+		}
+		execute.DispatchAndSend(ff)
+
+		// wait all table run closeDone() in table.go:84
+		execute.WG.Wait()
+
+		// after all tables call closeDone(), close all tables
+		// if table doesn't call Close(), there will be some problem when closing shard
+		for i := 0; i < len(allTables); i++ {
+			for j := 0; j < len(allTables[i]); j++ {
+				stats := allTables[i][j].Statistics()
+				fi.stats.ScannedValues += stats.ScannedValues
+				fi.stats.ScannedBytes += stats.ScannedBytes
+				allTables[i][j].Close()
+				allTables[i][j] = nil
+			}
+		}
+
+		// clear all extra memory
+		allTables = nil
+		allSeriesKey = nil
+		allTags = nil
+		allGroupKey = nil
+
+		return rs.Err()
 	}
-
-	// clear all extra memory
-	allTables = nil
-	allSeriesKey = nil
-	allTags = nil
-	allGroupKey = nil
-
-	return rs.Err()
-
-	// handle table
-	//if !table.Empty() {
-	//	if err := f(table); err != nil {
-	//		table.Close()
-	//		table = nil
-	//		return err
-	//	}
-	//	select {
-	//	case <-done:
-	//	case <-fi.ctx.Done():
-	//		table.Cancel()
-	//		return rs.Err()
-	//	}
-	//}
-
-	//stats := table.Statistics()
-	//fi.stats.ScannedValues += stats.ScannedValues
-	//fi.stats.ScannedBytes += stats.ScannedBytes
-	//table.Close()
-	//table = nil
 }
 
 //func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.ResultSet) error {

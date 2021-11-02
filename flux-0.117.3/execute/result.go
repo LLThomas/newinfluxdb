@@ -62,9 +62,6 @@ func (s *result) RetractTable(DatasetID, flux.GroupKey) error {
 }
 
 func (s *result) Process(id DatasetID, tbl flux.Table) error {
-
-	//log.Println("resultProcess: ")
-
 	select {
 	case s.tables <- resultMessage{
 		table: tbl,

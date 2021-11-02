@@ -56,14 +56,16 @@ func (s *Source) Run(ctx context.Context) {
 		err = s.runner.run(ctx)
 	}
 	s.m.recordMetrics(labelValues, start)
-	//for _, t := range s.ts {
-	//	t.Finish(s.id, err)
-	//}
-
-	// send nil table to all first operator in each pipeline thread, so they can go to transport.go:319
-	mpl := execute.ExecutionState.ESmultiThreadPipeLine
-	for i := 0; i < len(mpl); i++ {
-		mpl[i].Worker[0].Finish(s.id, err)
+	if !execute.WindowModel {
+		for _, t := range s.ts {
+			t.Finish(s.id, err)
+		}
+	} else {
+		// send nil table to all first operator in each pipeline thread, so they can go to transport.go:319
+		mpl := execute.ExecutionState.ESmultiThreadPipeLine
+		for i := 0; i < len(mpl); i++ {
+			mpl[i].Worker[0].Finish(s.id, err)
+		}
 	}
 }
 
@@ -91,11 +93,14 @@ func (s *Source) processTables(ctx context.Context, tables query.TableIterator, 
 	s.stats.ScannedValues += stats.ScannedValues
 	s.stats.ScannedBytes += stats.ScannedBytes
 
-	//for _, t := range s.ts {
-	//	if err := t.UpdateWatermark(s.id, watermark); err != nil {
-	//		return err
-	//	}
-	//}
+	if !execute.WindowModel {
+		for _, t := range s.ts {
+			if err := t.UpdateWatermark(s.id, watermark); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -105,10 +110,6 @@ func (s *Source) processTable(ctx context.Context, tbl flux.Table) error {
 		return nil
 	} else if len(s.ts) == 1 {
 		return s.ts[0].Process(s.id, tbl)
-
-		// send to different pipeline worker (first operator)
-		//return execute.ExecutionState.ESmultiThreadPipeLine[0].Worker[0].Process(
-		//	s.id, tbl)
 	}
 
 	// There is more than one transformation so we need to

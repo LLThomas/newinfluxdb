@@ -8,6 +8,9 @@ import (
 	"sync"
 )
 
+// global window model
+var WindowModel bool
+
 // global wg (for done in reader.go:239)
 var WG sync.WaitGroup
 

@@ -134,20 +134,21 @@ func (t *consecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) err
 	})
 	return nil
 }
-//
-//func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
-//	select {
-//	case <-t.finished:
-//		return t.err()
-//	default:
-//	}
-//	t.pushMsg(&processMsg{
-//		srcMessage: srcMessage(id),
-//		table:      newConsecutiveTransportTable(t, tbl),
-//	})
-//	return nil
-//}
-//
+
+func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
+	// There is duplicate defination below.
+	select {
+	case <-t.finished:
+		return t.err()
+	default:
+	}
+	t.pushMsg(&processMsg{
+		srcMessage: srcMessage(id),
+		table:      newConsecutiveTransportTable(t, tbl),
+	})
+	return nil
+}
+
 func (t *consecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
 	select {
 	case <-t.finished:
@@ -200,18 +201,18 @@ func (t *consecutiveTransport) ProcessTbls(id DatasetID, tbls []flux.Table) erro
 	return nil
 }
 
-func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
-	select {
-	case <-t.finished:
-		return t.err()
-	default:
-	}
-
-	//log.Println("processMsg: ", t.Label(), tbl.Key().Values())
-
-	t.worker.message <- nil
-	return nil
-}
+//func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
+//	select {
+//	case <-t.finished:
+//		return t.err()
+//	default:
+//	}
+//
+//	//log.Println("processMsg: ", t.Label(), tbl.Key().Values())
+//
+//	t.worker.message <- nil
+//	return nil
+//}
 
 func (t *consecutiveTransport) Finish(id DatasetID, err error) {
 	select {
@@ -219,14 +220,15 @@ func (t *consecutiveTransport) Finish(id DatasetID, err error) {
 		return
 	default:
 	}
-	//t.pushMsg(&finishMsg{
-	//	srcMessage: srcMessage(id),
-	//	err:        err,
-	//})
 
-	//log.Println("finishMsg: ", t.Label())
-
-	t.worker.message <- nil
+	if !WindowModel {
+		t.pushMsg(&finishMsg{
+			srcMessage: srcMessage(id),
+			err:        err,
+		})
+	} else {
+		t.worker.message <- nil
+	}
 }
 
 // ***********************************************************
