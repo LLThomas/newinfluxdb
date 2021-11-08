@@ -117,14 +117,12 @@ type reduceTransformation struct {
 	ctx      context.Context
 	fn       *execute.RowReduceFn
 	identity values.Object
-}
 
-func (t *reduceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
-	panic("implement me")
+	whichPipeThread int
 }
 
 func (t *reduceTransformation) ClearCache() error {
-	panic("implement me")
+	return t.d.ClearCache()
 }
 
 func NewReduceTransformation(ctx context.Context, spec *ReduceProcedureSpec, d execute.Dataset, cache execute.TableBuilderCache) (*reduceTransformation, error) {
@@ -136,6 +134,101 @@ func NewReduceTransformation(ctx context.Context, spec *ReduceProcedureSpec, d e
 		fn:       fn,
 		identity: spec.Identity,
 	}, nil
+}
+
+func (t *reduceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+
+	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	resOperator := execute.ResOperator
+
+	var tables []flux.Table
+	for k := 0; k < len(tbls); k++ {
+		tbl := tbls[k]
+
+		// Prepare the function with the column types list.
+		cols := tbl.Cols()
+		fn, err := t.fn.Prepare(cols, map[string]semantic.MonoType{"accumulator": t.identity.Type()})
+		if err != nil {
+			return err
+		}
+
+		// Start the reduce operation with the neutral element as the accumulator.
+		const accumulatorParamName = "accumulator"
+		params := map[string]values.Value{accumulatorParamName: t.identity}
+		if err := tbl.Do(func(cr flux.ColReader) error {
+			l := cr.Len()
+			for i := 0; i < l; i++ {
+				// the RowReduce function type takes a row of values, and an accumulator value, and
+				// computes a new accumulator result.
+				m, err := fn.Eval(t.ctx, i, cr, params)
+				if err != nil {
+					return errors.Wrap(err, codes.Inherit, "failed to evaluate reduce function")
+				}
+				params[accumulatorParamName] = m
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		// Compute the group key by replacing columns from the reducer if needed.
+		m := params[accumulatorParamName].Object()
+		key := t.computeGroupKey(tbl.Key(), m)
+
+		builder, created := t.cache.TableBuilder(key)
+		if !created {
+			return errors.New(codes.FailedPrecondition, "two reducers writing result to the same table")
+		}
+
+		// Add the key columns to the table.
+		if err := execute.AddTableKeyCols(key, builder); err != nil {
+			return err
+		}
+
+		// Add remaining columns from the object if they're not in the key.
+		columns := make([]string, 0, m.Len())
+		m.Range(func(name string, v values.Value) {
+			if key.HasCol(name) {
+				return
+			}
+			columns = append(columns, name)
+		})
+		sort.Strings(columns)
+
+		for _, label := range columns {
+			v, _ := m.Get(label)
+			if _, err := builder.AddCol(flux.ColMeta{
+				Label: label,
+				Type:  flux.ColumnType(v.Type()),
+			}); err != nil {
+				return err
+			}
+		}
+
+		// Append a value for each column.
+		for j, c := range builder.Cols() {
+			v, ok := m.Get(c.Label)
+			if !ok {
+				v = key.LabelValue(c.Label)
+			}
+
+			if err := builder.AppendValue(j, v); err != nil {
+				return err
+			}
+		}
+
+		table, _ := builder.Table()
+		tables = append(tables, table)
+	}
+
+	// send table to next operator
+	if nextOperator == nil {
+		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+	} else {
+		nextOperator.PushToChannel(tables)
+	}
+
+	return nil
 }
 
 func (t *reduceTransformation) Process(id execute.DatasetID, tbl flux.Table) error {
