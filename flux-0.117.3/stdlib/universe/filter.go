@@ -21,6 +21,7 @@ import (
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
+	"log"
 )
 
 const FilterKind = "filter"
@@ -124,7 +125,7 @@ func createFilterTransformation(id execute.DatasetID, mode execute.AccumulationM
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
-	t, d, err := NewFilterTransformation(a.Context(), s, id, a.Allocator())
+	t, d, err := NewFilterTransformation(a.Context(), s, id, a.Allocator(), whichPipeThread)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -153,7 +154,7 @@ func (t *filterTransformation) ClearCache() error {
 	return t.d.ClearCache()
 }
 
-func NewFilterTransformation(ctx context.Context, spec *FilterProcedureSpec, id execute.DatasetID, alloc *memory.Allocator) (execute.Transformation, execute.Dataset, error) {
+func NewFilterTransformation(ctx context.Context, spec *FilterProcedureSpec, id execute.DatasetID, alloc *memory.Allocator, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	fn := execute.NewRowPredicateFn(spec.Fn.Fn, compiler.ToScope(spec.Fn.Scope))
 	t := &filterTransformation{
 		d:               execute.NewPassthroughDataset(id),
@@ -161,6 +162,7 @@ func NewFilterTransformation(ctx context.Context, spec *FilterProcedureSpec, id 
 		ctx:             ctx,
 		keepEmptyTables: spec.KeepEmptyTables,
 		alloc:           alloc,
+		whichPipeThread: whichPipeThread,
 	}
 	return t, t.d, nil
 }
@@ -176,23 +178,23 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
 	resOperator := execute.ResOperator
 
-	// Prepare the function for the column types.
-	cols := tbls[0].Cols()
-	fn, err := t.fn.Prepare(cols)
-	if err != nil {
-		// TODO(nathanielc): Should we not fail the query for failed compilation?
-		return err
-	}
-
-	// Retrieve the inferred input type for the function.
-	// If all of the inferred inputs are part of the group
-	// key, we can evaluate a record with only the group key.
-	if t.canFilterByKey(fn, tbls[0]) {
-		return t.anotherFilterByKey(tbls)
-	}
-
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
+
+		// Prepare the function for the column types.
+		cols := tbls[k].Cols()
+		fn, err := t.fn.Prepare(cols)
+		if err != nil {
+			// TODO(nathanielc): Should we not fail the query for failed compilation?
+			return err
+		}
+
+		// Retrieve the inferred input type for the function.
+		// If all of the inferred inputs are part of the group
+		// key, we can evaluate a record with only the group key.
+		if t.canFilterByKey(fn, tbls[0]) {
+			return t.anotherFilterByKey(tbls)
+		}
 
 		// Prefill the columns that can be inferred from the group key.
 		// Retrieve the input type from the function and record the indices
@@ -211,21 +213,24 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 		table, err := t.filterTable(fn, tbls[k], record, indices)
 		if err != nil {
 			return err
-		} else if table.Empty() && !t.keepEmptyTables {
-			// Drop the table.
-			return nil
 		}
 
-		tables = append(tables, table)
+		if (!table.Empty()) {
+			tables = append(tables, table)
+		}
 	}
 
 	// send table to next operator
 	if nextOperator == nil {
-		// log.Println("filter resOperator: ", tables[0].Key())
-		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+		//log.Println("filter resOperator: ", tables[0].Key())
+		if tables != nil {
+			resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+		}
 	} else {
 		// log.Println("filter PushToChannel: ", tables[0].Key())
-		nextOperator.PushToChannel(tables)
+		if tables != nil {
+			nextOperator.PushToChannel(tables)
+		}
 	}
 
 	return nil
@@ -272,6 +277,9 @@ func (t *filterTransformation) Process(id execute.DatasetID, tbl flux.Table) err
 }
 
 func (t *filterTransformation) canFilterByKey(fn *execute.RowPredicatePreparedFn, tbl flux.Table) bool {
+
+	//log.Println("canFilterByKey: ", tbl.Key())
+
 	inType := fn.InferredInputType()
 	nargs, err := inType.NumProperties()
 	if err != nil {
@@ -311,6 +319,9 @@ func (t *filterTransformation) anotherFilterByKey(tbls []flux.Table) error {
 
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
+
+		log.Println("anotherFilterByKey: ", tbls[k].Key().String())
+
 		key := tbls[k].Key()
 		cols := key.Cols()
 		fn, err := t.fn.Prepare(cols)
