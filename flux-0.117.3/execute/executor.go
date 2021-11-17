@@ -95,7 +95,7 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 
 	// set execution model
 	// If the first operator is window() (except filter()), set WindowModel true.
-	if strings.Contains(es.consecutiveTransportSet[0].t.Label(), "window") {
+	if len(es.consecutiveTransportSet) > 0 && strings.Contains(es.consecutiveTransportSet[0].t.Label(), "window") {
 		WindowModel = true
 		log.Println("number of pipeline: ", len(es.ESmultiThreadPipeLine))
 		log.Println("number of operator in each pipeline: ", len(es.ESmultiThreadPipeLine[0].Worker))
