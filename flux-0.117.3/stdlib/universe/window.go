@@ -461,10 +461,12 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 						rawDataIndex[k] = 0
 					}
 					// send table to next operator
-					if nextOperator == nil {
-						resOperator.ProcessTbl(execute.DatasetID{0}, tables)
-					} else {
-						nextOperator.PushToChannel(tables)
+					if tables != nil {
+						if nextOperator == nil{
+							resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+						} else {
+							nextOperator.PushToChannel(tables)
+						}
 					}
 				}
 				// update left and right bound
@@ -547,7 +549,7 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 		}
 
 		// send table group to next operator
-		if len(tables) > 0 {
+		if len(tables) > 0 && tables != nil {
 			if nextOperator == nil {
 				resOperator.ProcessTbl(execute.DatasetID{0}, tables)
 			} else {

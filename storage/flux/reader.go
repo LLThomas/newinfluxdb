@@ -3,6 +3,7 @@ package storageflux
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/gogo/protobuf/types"
@@ -159,6 +160,8 @@ func (fi *filterIterator) Do(f func(flux.Table) error) error {
 }
 
 func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.ResultSet) error {
+
+	log.Println("execute.WindowModel: ", execute.WindowModel)
 
 	if !execute.WindowModel {
 		// these resources must be closed if not nil on return

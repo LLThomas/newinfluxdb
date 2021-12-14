@@ -240,12 +240,10 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 	// send table to next operator
 	// If tables is nil, error (pipe worker error:  close of closed channel) will occur because of multiple close operations of close(t.finished)
 	// in transport.go.
-	if nextOperator == nil {
-		if tables != nil {
+	if tables != nil {
+		if nextOperator == nil {
 			resOperator.ProcessTbl(DatasetID{0}, tables)
-		}
-	} else {
-		if tables != nil {
+		} else {
 			nextOperator.PushToChannel(tables)
 		}
 	}
