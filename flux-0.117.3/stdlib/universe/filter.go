@@ -221,14 +221,10 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 	}
 
 	// send table to next operator
-	if nextOperator == nil {
-		//log.Println("filter resOperator: ", tables[0].Key())
-		if tables != nil {
+	if tables != nil {
+		if nextOperator == nil {
 			resOperator.ProcessTbl(execute.DatasetID{0}, tables)
-		}
-	} else {
-		// log.Println("filter PushToChannel: ", tables[0].Key())
-		if tables != nil {
+		} else {
 			nextOperator.PushToChannel(tables)
 		}
 	}

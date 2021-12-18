@@ -2,8 +2,6 @@ package universe
 
 import (
 	"context"
-	"github.com/influxdata/influxdb/v2/tsdb/cursors"
-
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/arrow"
@@ -18,6 +16,7 @@ import (
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
+	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 )
 
 const RenameKind = "rename"
@@ -425,14 +424,8 @@ type schemaMutationTransformation struct {
 	cache    table.BuilderCache
 	ctx      context.Context
 	mutators []SchemaMutator
-}
 
-func (t *schemaMutationTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
-	panic("implement me")
-}
-
-func (t *schemaMutationTransformation) ClearCache() error {
-	panic("implement me")
+	whichPipeThread int
 }
 
 func createSchemaMutationTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
@@ -440,10 +433,10 @@ func createSchemaMutationTransformation(id execute.DatasetID, mode execute.Accum
 	if !ok {
 		return nil, nil, errors.Newf(codes.Internal, "invalid spec type %T", spec)
 	}
-	return NewSchemaMutationTransformation(a.Context(), s, id, a.Allocator())
+	return NewSchemaMutationTransformation(a.Context(), s, id, a.Allocator(), whichPipeThread)
 }
 
-func NewSchemaMutationTransformation(ctx context.Context, spec *SchemaMutationProcedureSpec, id execute.DatasetID, mem *memory.Allocator) (execute.Transformation, execute.Dataset, error) {
+func NewSchemaMutationTransformation(ctx context.Context, spec *SchemaMutationProcedureSpec, id execute.DatasetID, mem *memory.Allocator, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
 	mutators := make([]SchemaMutator, len(spec.Mutations))
 	for i, mutation := range spec.Mutations {
 		m, err := mutation.Mutator()
@@ -461,9 +454,55 @@ func NewSchemaMutationTransformation(ctx context.Context, spec *SchemaMutationPr
 		},
 		mutators: mutators,
 		ctx:      ctx,
+		whichPipeThread: whichPipeThread,
 	}
 	t.d = dataset.New(id, &t.cache)
 	return t, t.d, nil
+}
+
+func (t *schemaMutationTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
+
+	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	resOperator := execute.ResOperator
+
+	var tables []flux.Table
+	for k := 0; k < len(tbls); k++ {
+		ctx := NewBuilderContext(tbls[k])
+		for _, m := range t.mutators {
+			if err := m.Mutate(t.ctx, ctx); err != nil {
+				return err
+			}
+		}
+
+		mutTable, err := t.mutateTable(tbls[k], ctx)
+		if err != nil {
+			tbls[k].Done()
+			return err
+		}
+		builder, _ := table.GetBufferedBuilder(mutTable.Key(), &t.cache)
+		//return builder.AppendTable(mutTable)
+		err = nil
+		if err = builder.AppendTable(mutTable); err != nil {
+			return err
+		}
+		tbl, _ := builder.Table()
+		tables = append(tables, tbl)
+	}
+
+	// send table to next operator
+	if tables != nil {
+		if nextOperator == nil {
+			resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+		} else {
+			nextOperator.PushToChannel(tables)
+		}
+	}
+
+	return nil
+}
+
+func (t *schemaMutationTransformation) ClearCache() error {
+	return t.d.ClearCache()
 }
 
 func (t *schemaMutationTransformation) Process(id execute.DatasetID, tbl flux.Table) error {

@@ -14,7 +14,17 @@ type dataset struct {
 }
 
 func (d *dataset) ClearCache() error {
-	panic("implement me")
+	var err error
+	d.cache.ForEach(func(key flux.GroupKey, builder table.Builder) error {
+		if err != nil {
+			// skip once error occurs
+			return err
+		}
+		d.cache.DiscardTable(key)
+		d.cache.ExpireTable(key)
+		return err
+	})
+	return err
 }
 
 // New constructs an execute.Dataset that is compatible with
