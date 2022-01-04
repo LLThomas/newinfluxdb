@@ -3,7 +3,6 @@ package storageflux
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/gogo/protobuf/types"
@@ -300,11 +299,11 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 				tables = append(tables, table)
 			}
 
-			log.Println("reader: ", whichPipeThread)
-			for kkk:=0;kkk<len(tables);kkk++{
-				log.Println(tables[kkk].Key().String())
-			}
-			log.Println("tmp")
+			//log.Println("reader: ", whichPipeThread)
+			//for kkk:=0;kkk<len(tables);kkk++{
+			//	log.Println(tables[kkk].Key().String())
+			//}
+			//log.Println("tmp")
 
 			// send table group to first operator
 			allTables = append(allTables, tables)
