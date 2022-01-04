@@ -212,6 +212,7 @@ func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) 
 
 		// release the table memory when calling BlockIterator next time
 		tbl.BlockIterator(1)
+		t.ClearCache()
 	}
 
 	// send table to next operator

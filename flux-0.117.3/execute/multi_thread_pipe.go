@@ -79,10 +79,12 @@ func StopAllOperatorThread(whichOperator int) error {
 func SplitSeriesKey(allSeriesKey []cursors.Cursor) map[cursors.Cursor]int {
 
 	pipeToGroupKey := make(map[cursors.Cursor]int)
+	for i := 0; i < len(allSeriesKey); i++ {
+		pipeToGroupKey[allSeriesKey[i]] = i
+	}
 
 	mpl := ExecutionState.ESmultiThreadPipeLine
 	n := len(allSeriesKey)
-
 	split := 1
 	if n >= 2*len(mpl) {
 		split = n / len(mpl)
@@ -92,9 +94,6 @@ func SplitSeriesKey(allSeriesKey []cursors.Cursor) map[cursors.Cursor]int {
 	for len(allSeriesKey) > 0 {
 		count := 0
 		for count < split && len(allSeriesKey) > 0 {
-
-			pipeToGroupKey[allSeriesKey[0]] = i
-
 			mpl[i%len(mpl)].DataSource = append(mpl[i%len(mpl)].DataSource, allSeriesKey[0])
 			allSeriesKey = allSeriesKey[1:]
 			count++

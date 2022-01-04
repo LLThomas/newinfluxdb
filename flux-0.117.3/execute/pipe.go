@@ -120,7 +120,7 @@ func (p *pipeWorker) run(ct *consecutiveTransport,ctx context.Context)  {
 			//log.Println("p.closing")
 			return
 		case msg := <- p.message:
-			//log.Println("pipeWorker msg")
+			//log.Println("pipeWorker msg: ")
 			ct.pipeProcesses(ctx, msg)
 		}
 	}

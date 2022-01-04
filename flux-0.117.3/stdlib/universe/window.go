@@ -413,6 +413,7 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 			breakTag := false
 			// update allCR
 			for i := 0; i < n; i++ {
+				t.ClearCache()
 				cr, _ := tbls[i].BlockIterator(1)
 				if cr == nil {
 					breakTag = true
@@ -432,33 +433,74 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 		if updateCRTag {
 			// concern over block data
 			if numCount[0] > 0 {
-				for k := 0; k < n; k++ {
+
+				//log.Println("numCount: ", numCount)
+
+				//for k := 0; k < n; k++ {
+				//	var tables []flux.Table
+				//	for i := 0; i < numCount[k]; i++ {
+				//		builder, _ := t.cache.TableBuilder(lastWindowKey[k][i])
+				//		// add data to window
+				//		for rawDataIndex[k] < allLen[k] && values.Time(allCR[k].Times(timeIdx).Value(rawDataIndex[k])) < lastWindowBound[k][i].Stop() {
+				//			for j, c := range builder.Cols() {
+				//				switch c.Label {
+				//				case t.startCol:
+				//					if err := builder.AppendTime(startColIdx, lastWindowBound[k][i].Start()); err != nil {
+				//						return err
+				//					}
+				//				case t.stopCol:
+				//					if err := builder.AppendTime(stopColIdx, lastWindowBound[k][i].Stop()); err != nil {
+				//						return err
+				//					}
+				//				default:
+				//					if err := builder.AppendValue(j, execute.ValueForRow(allCR[k], rawDataIndex[k], j)); err != nil {
+				//						return err
+				//					}
+				//				}
+				//			}
+				//			rawDataIndex[k]++
+				//		}
+				//		b, _ := builder.Table()
+				//		tables = append(tables, b)
+				//		rawDataIndex[k] = 0
+				//	}
+				//	// send table to next operator
+				//	if tables != nil {
+				//		if nextOperator == nil{
+				//			resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+				//		} else {
+				//			nextOperator.PushToChannel(tables)
+				//		}
+				//	}
+				//}
+
+				for k := 0; k < numCount[0]; k++ {
 					var tables []flux.Table
-					for i := 0; i < numCount[k]; i++ {
-						builder, _ := t.cache.TableBuilder(lastWindowKey[k][i])
+					for i := 0; i < n; i++ {
+						builder, _ := t.cache.TableBuilder(lastWindowKey[i][k])
 						// add data to window
-						for rawDataIndex[k] < allLen[k] && values.Time(allCR[k].Times(timeIdx).Value(rawDataIndex[k])) < lastWindowBound[k][i].Stop() {
+						for rawDataIndex[i] < allLen[i] && values.Time(allCR[i].Times(timeIdx).Value(rawDataIndex[i])) < lastWindowBound[i][k].Stop() {
 							for j, c := range builder.Cols() {
 								switch c.Label {
 								case t.startCol:
-									if err := builder.AppendTime(startColIdx, lastWindowBound[k][i].Start()); err != nil {
+									if err := builder.AppendTime(startColIdx, lastWindowBound[i][k].Start()); err != nil {
 										return err
 									}
 								case t.stopCol:
-									if err := builder.AppendTime(stopColIdx, lastWindowBound[k][i].Stop()); err != nil {
+									if err := builder.AppendTime(stopColIdx, lastWindowBound[i][k].Stop()); err != nil {
 										return err
 									}
 								default:
-									if err := builder.AppendValue(j, execute.ValueForRow(allCR[k], rawDataIndex[k], j)); err != nil {
+									if err := builder.AppendValue(j, execute.ValueForRow(allCR[i], rawDataIndex[i], j)); err != nil {
 										return err
 									}
 								}
 							}
-							rawDataIndex[k]++
+							rawDataIndex[i]++
 						}
 						b, _ := builder.Table()
 						tables = append(tables, b)
-						rawDataIndex[k] = 0
+						rawDataIndex[i] = 0
 					}
 					// send table to next operator
 					if tables != nil {
@@ -469,6 +511,7 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 						}
 					}
 				}
+
 				// update left and right bound
 				leftBound = lastWindowBound[0][numCount[0]-1].Start()
 				rightBound = lastWindowBound[0][numCount[0]-1].Stop()
@@ -491,6 +534,10 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 		for i := 0; i < n; i++ {
 			bnds := interval.NewBounds(tmpLeftBound, rightBound)
 			key := t.newWindowGroupKey(tbls[i], keyCols, bnds, keyColMap)
+
+			//log.Println("table: ", tbls[i].Key().String())
+			//log.Println("window: ", t.whichPipeThread, key.String())
+
 			builder, created := t.cache.TableBuilder(key)
 			if created {
 				for _, c := range newCols {

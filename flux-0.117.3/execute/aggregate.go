@@ -103,6 +103,8 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 		tableColMap := make([]int, len(t.config.Columns))
 		aggregates := make([]ValueFunc, len(t.config.Columns))
 		cols := tbl.Cols()
+
+		should_continue := false
 		for j, label := range t.config.Columns {
 			idx := -1
 			for bj, bc := range cols {
@@ -112,7 +114,9 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 				}
 			}
 			if idx < 0 {
-				return errors.Newf(codes.FailedPrecondition, "column %q does not exist", label)
+				should_continue = true
+				break;
+				//return errors.Newf(codes.FailedPrecondition, "column %q does not exist", label)
 			}
 			c := cols[idx]
 			if tbl.Key().HasCol(c.Label) {
@@ -145,6 +149,9 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 				return err
 			}
 			tableColMap[j] = idx
+		}
+		if should_continue {
+			continue
 		}
 
 		// just return t when calling BlockIterator for the first time
@@ -235,6 +242,7 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 
 		// release the table memory when calling BlockIterator next time
 		tbl.BlockIterator(1)
+		t.ClearCache()
 	}
 
 	// send table to next operator

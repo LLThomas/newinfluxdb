@@ -161,8 +161,6 @@ func (fi *filterIterator) Do(f func(flux.Table) error) error {
 
 func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.ResultSet) error {
 
-	log.Println("execute.WindowModel: ", execute.WindowModel)
-
 	if !execute.WindowModel {
 		// these resources must be closed if not nil on return
 		var (
@@ -301,6 +299,13 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 				}
 				tables = append(tables, table)
 			}
+
+			log.Println("reader: ", whichPipeThread)
+			for kkk:=0;kkk<len(tables);kkk++{
+				log.Println(tables[kkk].Key().String())
+			}
+			log.Println("tmp")
+
 			// send table group to first operator
 			allTables = append(allTables, tables)
 			mpl[whichPipeThread].Worker[0].ProcessTbls(execute.DatasetID{0}, tables)

@@ -154,12 +154,12 @@ func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *me
 		dispatcher:            newPoolDispatcher(10, e.logger),
 		logger:                e.logger,
 		// assume that number of thread is equal to the number of cores
-		ESmultiThreadPipeLine: make([]*MultiThreadPipeLine, 6),
+		ESmultiThreadPipeLine: make([]*MultiThreadPipeLine, 2),
 		// in case of sending duplicate finishMsg to finish operator, we count the finishMsg
 		// if numFinishMsgCount equals to the number of pipeline thread, we send a realy finish msg to finish operator
 		numFinishMsgCount: 0,
 		// assume that the size of block group is 3
-		Len: 3,
+		Len: 1,
 	}
 
 	for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
