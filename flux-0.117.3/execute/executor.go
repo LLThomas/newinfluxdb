@@ -151,7 +151,7 @@ func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *me
 		resources: p.Resources,
 		results:   make(map[string]flux.Result),
 		// TODO(nathanielc): Have the planner specify the dispatcher throughput
-		dispatcher:            newPoolDispatcher(10, e.logger),
+		dispatcher:            newPoolDispatcher(1, e.logger),
 		logger:                e.logger,
 		// assume that number of thread is equal to the number of cores
 		ESmultiThreadPipeLine: make([]*MultiThreadPipeLine, 2),
@@ -159,7 +159,7 @@ func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *me
 		// if numFinishMsgCount equals to the number of pipeline thread, we send a realy finish msg to finish operator
 		numFinishMsgCount: 0,
 		// assume that the size of block group is 3
-		Len: 1,
+		Len: 5,
 	}
 
 	for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {

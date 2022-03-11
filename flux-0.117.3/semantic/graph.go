@@ -1,7 +1,10 @@
 package semantic
 
 import (
+	"github.com/antonmedv/expr/vm"
+	"log"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/influxdata/flux/ast"
@@ -13,6 +16,7 @@ type Node interface {
 	Copy() Node
 
 	Location() ast.SourceLocation
+	InvokeExprFunc() *vm.Program
 }
 
 type Loc ast.SourceLocation
@@ -67,6 +71,63 @@ func (*StringLiteral) node()          {}
 func (*RegexpLiteral) node()          {}
 func (*UnsignedIntegerLiteral) node() {}
 
+/**
+for invoking GetExprPointer()
+-------------------------------------------------------------------
+ */
+
+func (*Package) InvokeExprFunc() *vm.Program           {return nil}
+func (*File) InvokeExprFunc() *vm.Program             {return nil}
+func (*Block) InvokeExprFunc() *vm.Program            {return nil}
+func (*PackageClause) InvokeExprFunc() *vm.Program     {return nil}
+func (*ImportDeclaration) InvokeExprFunc() *vm.Program {return nil}
+
+func (*OptionStatement) InvokeExprFunc() *vm.Program          {return nil}
+func (*BuiltinStatement) InvokeExprFunc() *vm.Program         {return nil}
+func (*TestStatement) InvokeExprFunc() *vm.Program            {return nil}
+func (*ExpressionStatement) InvokeExprFunc() *vm.Program      {return nil}
+func (rs *ReturnStatement) InvokeExprFunc() *vm.Program {
+	return rs.Argument.GetExprPointer()
+}
+func (*MemberAssignment) InvokeExprFunc() *vm.Program        {return nil}
+func (*NativeVariableAssignment) InvokeExprFunc() *vm.Program {return nil}
+
+func (*StringExpression) InvokeExprFunc() *vm.Program      {return nil}
+func (*ArrayExpression) InvokeExprFunc() *vm.Program      {return nil}
+func (*DictExpression) InvokeExprFunc() *vm.Program        {return nil}
+func (*FunctionExpression) InvokeExprFunc() *vm.Program    {return nil}
+func (*BinaryExpression) InvokeExprFunc() *vm.Program     {return nil}
+func (*CallExpression) InvokeExprFunc() *vm.Program        {return nil}
+func (*ConditionalExpression) InvokeExprFunc() *vm.Program {return nil}
+func (*IdentifierExpression) InvokeExprFunc() *vm.Program  {return nil}
+func (*LogicalExpression) InvokeExprFunc() *vm.Program     {return nil}
+func (*MemberExpression) InvokeExprFunc() *vm.Program      {return nil}
+func (*IndexExpression) InvokeExprFunc() *vm.Program       {return nil}
+func (*ObjectExpression) InvokeExprFunc() *vm.Program      {return nil}
+func (*UnaryExpression) InvokeExprFunc() *vm.Program       {return nil}
+
+func (*Identifier) InvokeExprFunc() *vm.Program {return nil}
+func (*Property) InvokeExprFunc() *vm.Program   {return nil}
+
+func (*TextPart) InvokeExprFunc() *vm.Program         {return nil}
+func (*InterpolatedPart) InvokeExprFunc() *vm.Program {return nil}
+
+func (*FunctionParameters) InvokeExprFunc() *vm.Program {return nil}
+func (*FunctionParameter) InvokeExprFunc() *vm.Program  {return nil}
+
+func (*BooleanLiteral) InvokeExprFunc() *vm.Program         {return nil}
+func (*DateTimeLiteral) InvokeExprFunc() *vm.Program        {return nil}
+func (*DurationLiteral) InvokeExprFunc() *vm.Program        {return nil}
+func (*FloatLiteral) InvokeExprFunc() *vm.Program           {return nil}
+func (*IntegerLiteral) InvokeExprFunc() *vm.Program         {return nil}
+func (*StringLiteral) InvokeExprFunc() *vm.Program          {return nil}
+func (*RegexpLiteral) InvokeExprFunc() *vm.Program          {return nil}
+func (*UnsignedIntegerLiteral) InvokeExprFunc() *vm.Program {return nil}
+
+/**
+-------------------------------------------------------------------
+ */
+
 type Statement interface {
 	Node
 	stmt()
@@ -92,6 +153,9 @@ type Expression interface {
 	Node
 	expression()
 	TypeOf() MonoType
+
+	generateCode() string
+	GetExprPointer() *vm.Program
 }
 
 func (*StringExpression) expression()       {}
@@ -115,6 +179,118 @@ func (*RegexpLiteral) expression()          {}
 func (*StringLiteral) expression()          {}
 func (*UnaryExpression) expression()        {}
 func (*UnsignedIntegerLiteral) expression() {}
+
+/**
+-----------------------------------------------------------------------------
+for getting expression function pointer
+ */
+func (*StringExpression) GetExprPointer() *vm.Program       {return nil}
+func (*ArrayExpression) GetExprPointer() *vm.Program        {return nil}
+func (*DictExpression) GetExprPointer() *vm.Program         {return nil}
+func (*BinaryExpression) GetExprPointer() *vm.Program       {return nil}
+func (*BooleanLiteral) GetExprPointer() *vm.Program         {return nil}
+func (*CallExpression) GetExprPointer() *vm.Program         {return nil}
+func (*ConditionalExpression) GetExprPointer() *vm.Program  {return nil}
+func (*DateTimeLiteral) GetExprPointer() *vm.Program        {return nil}
+func (*DurationLiteral) GetExprPointer() *vm.Program        {return nil}
+func (*FloatLiteral) GetExprPointer() *vm.Program           {return nil}
+func (*FunctionExpression) GetExprPointer() *vm.Program     {return nil}
+func (*IdentifierExpression) GetExprPointer() *vm.Program   {return nil}
+func (*IntegerLiteral) GetExprPointer() *vm.Program         {return nil}
+func (e *LogicalExpression) GetExprPointer() *vm.Program {
+	return e.ExpProgram
+}
+func (*MemberExpression) GetExprPointer() *vm.Program       {return nil}
+func (*IndexExpression) GetExprPointer() *vm.Program        {return nil}
+func (*ObjectExpression) GetExprPointer() *vm.Program       {return nil}
+func (*RegexpLiteral) GetExprPointer() *vm.Program          {return nil}
+func (*StringLiteral) GetExprPointer() *vm.Program          {return nil}
+func (*UnaryExpression) GetExprPointer() *vm.Program        {return nil}
+func (*UnsignedIntegerLiteral) GetExprPointer() *vm.Program {return nil}
+/**
+-----------------------------------------------------------------------------
+ */
+
+/**
+-----------------------------------------------------------------------------
+for code generation
+ */
+
+func midOperatorToString(operatorKind ast.OperatorKind) string {
+	switch operatorKind {
+	case ast.AdditionOperator:
+		return "+"
+	case ast.SubtractionOperator:
+		return "-"
+	case ast.MultiplicationOperator:
+		return "*"
+	case ast.DivisionOperator:
+		return "/"
+	case ast.LessThanOperator:
+		return "<"
+	case ast.LessThanEqualOperator:
+		return "<="
+	case ast.GreaterThanOperator:
+		return ">"
+	case ast.GreaterThanEqualOperator:
+		return ">="
+	case ast.EqualOperator:
+		return "=="
+	case ast.NotEqualOperator:
+		return "!="
+	default:
+		log.Fatal("Wrong operatorKind!!")
+		return ""
+	}
+}
+
+func (e *BinaryExpression) generateCode() string {
+	midOperator := midOperatorToString(e.Operator)
+	return "(" + e.Left.generateCode() + " " + midOperator + " "  + e.Right.generateCode() + ")"
+}
+
+// float literal
+func (e *FloatLiteral) generateCode() string {
+	return strconv.FormatFloat(e.Value, 'f', 2, 64)
+}
+
+func (e *LogicalExpression) generateCode() string {
+	var midOperator string
+	if e.Operator == ast.AndOperator {
+		midOperator = "&&"
+	} else if e.Operator == ast.OrOperator {
+		midOperator = "||"
+	}
+	return "(" + e.Left.generateCode() + " " +midOperator + " " + e.Right.generateCode() + ")"
+}
+
+// _value attribute
+func (e *MemberExpression) generateCode() string {
+	return e.Property
+}
+
+func (*StringExpression) generateCode()  string { return ""}
+func (*ArrayExpression) generateCode()   string { return ""}
+func (*DictExpression) generateCode()    string { return ""}
+func (*BooleanLiteral) generateCode()    string { return ""}
+func (*CallExpression) generateCode()    string { return ""}
+func (*ConditionalExpression) generateCode() string { return ""}
+func (*DateTimeLiteral) generateCode() string { return ""}
+func (*DurationLiteral) generateCode() string { return ""}
+func (*FunctionExpression) generateCode() string { return ""}
+func (*IdentifierExpression) generateCode() string { return ""}
+func (*IntegerLiteral) generateCode() string { return ""}
+func (*IndexExpression) generateCode() string { return ""}
+func (*ObjectExpression) generateCode() string { return ""}
+func (*RegexpLiteral) generateCode() string { return ""}
+func (*StringLiteral) generateCode() string { return ""}
+func (*UnaryExpression) generateCode() string { return ""}
+func (*UnsignedIntegerLiteral) generateCode() string { return ""}
+
+/**
+-----------------------------------------------------------------------------
+ */
+
 
 type Literal interface {
 	Expression
@@ -757,6 +933,8 @@ type LogicalExpression struct {
 	Operator ast.LogicalOperatorKind
 	Left     Expression
 	Right    Expression
+
+	ExpProgram *vm.Program
 }
 
 func (*LogicalExpression) NodeType() string { return "LogicalExpression" }

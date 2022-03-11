@@ -3,6 +3,8 @@ package universe
 import (
 	"context"
 	"fmt"
+	"github.com/antonmedv/expr"
+	"github.com/antonmedv/expr/vm"
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/bitutil"
 	arrowmem "github.com/apache/arrow/go/arrow/memory"
@@ -148,6 +150,7 @@ type filterTransformation struct {
 	alloc           *memory.Allocator
 
 	whichPipeThread int
+	exprPointer *vm.Program
 }
 
 func (t *filterTransformation) ClearCache() error {
@@ -163,6 +166,8 @@ func NewFilterTransformation(ctx context.Context, spec *FilterProcedureSpec, id 
 		keepEmptyTables: spec.KeepEmptyTables,
 		alloc:           alloc,
 		whichPipeThread: whichPipeThread,
+		// Body index may be wrong !
+		exprPointer: spec.Fn.Fn.Block.Body[0].InvokeExprFunc(),
 	}
 	return t, t.d, nil
 }
@@ -173,21 +178,32 @@ func (t *filterTransformation) RetractTable(id execute.DatasetID, key flux.Group
 
 func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 
+
+	//exprProgram := t.exprPointer
+	//env := make(map[string]int, 1)
+	//env["_value"] = 498.0
+	//res, err := expr.Run(exprProgram, env)
+	//log.Println("res: ", res)
+
 	//log.Println("filter whichPipeThread: ", t.whichPipeThread)
 
 	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
 	resOperator := execute.ResOperator
+	
+	if tbls == nil {
+		return nil
+	}
 
+	// Prepare the function for the column types.
+	cols := tbls[0].Cols()
+	fn, err := t.fn.Prepare(cols)
+	if err != nil {
+		// TODO(nathanielc): Should we not fail the query for failed compilation?
+		return err
+	}
+	
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
-
-		// Prepare the function for the column types.
-		cols := tbls[k].Cols()
-		fn, err := t.fn.Prepare(cols)
-		if err != nil {
-			// TODO(nathanielc): Should we not fail the query for failed compilation?
-			return err
-		}
 
 		// Retrieve the inferred input type for the function.
 		// If all of the inferred inputs are part of the group
@@ -433,17 +449,33 @@ func (t *filterTransformation) filter(fn *execute.RowPredicatePreparedFn, cr flu
 	cols, l := cr.Cols(), cr.Len()
 	bitset := arrowmem.NewResizableBuffer(t.alloc)
 	bitset.Resize(l)
-	for i := 0; i < l; i++ {
-		for _, j := range indices {
-			record.Set(cols[j].Label, execute.ValueForRow(cr, i, j))
-		}
 
-		val, err := fn.Eval(t.ctx, record)
+	_valueIndex := 0
+	// find _value index
+	for i, j := range cols {
+		if j.Label == "_value" {
+			_valueIndex = i
+			break
+		}
+	}
+
+	for i := 0; i < l; i++ {
+		//for _, j := range indices {
+		//	record.Set(cols[j].Label, execute.ValueForRow(cr, i, j))
+		//}
+
+		// use expr code
+		exprProgram := t.exprPointer
+		parameters := make(map[string]float64, 1)
+		parameters["_value"] = execute.ValueForRow(cr, i, _valueIndex).Float()
+		val, err := expr.Run(exprProgram, parameters)
+
+		//val, err := fn.Eval(t.ctx, record)
 		if err != nil {
 			bitset.Release()
 			return nil, errors.Wrap(err, codes.Inherit, "failed to evaluate filter function")
 		}
-		bitutil.SetBitTo(bitset.Buf(), i, val)
+		bitutil.SetBitTo(bitset.Buf(), i, val.(bool))
 	}
 	return bitset, nil
 }
