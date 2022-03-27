@@ -3,15 +3,14 @@ package semantic
 import (
 	"log"
 	"regexp"
-	"strings"
 	"time"
 
+	"github.com/antonmedv/expr"
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/influxdata/flux/ast"
 	"github.com/influxdata/flux/codes"
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/internal/fbsemantic"
-	"github.com/antonmedv/expr"
 )
 
 func DeserializeFromFlatBuffer(buf []byte) (*Package, error) {
@@ -194,7 +193,11 @@ func fromExpressionTableOptional(getTable getTableFn, exprType fbsemantic.Expres
 		if err := e.FromBuf(fbExpr); err != nil {
 			return nil, err
 		}
-		if 0 == strings.Compare(e.Loc.Source, "r._value + 1.0 < 319.0 or r._value > 450.0") {
+		//log.Println("file: ", e.Loc.File)
+		//log.Println("source: ", e.Loc.Source)
+		//log.Println("outside: ", e.Loc.Source)
+		//if 0 == strings.Compare(e.Loc.Source, "r._value + 1.0 < 319.0 or r._value > 450.0") {
+		if e.File == "" {
 			str := e.generateCode()
 			log.Println("codegen: ", str)
 			program, err := expr.Compile(str)
@@ -202,10 +205,10 @@ func fromExpressionTableOptional(getTable getTableFn, exprType fbsemantic.Expres
 			if err != nil {
 				panic(err)
 			}
-			env := make(map[string]int, 1)
-			env["_value"] = 2
-			res, err := expr.Run(program, env)
-			log.Println("res: ", res)
+			//env := make(map[string]int, 1)
+			//env["_value"] = 2
+			//res, err := expr.Run(program, env)
+			//log.Println("res: ", res)
 		}
 		return e, nil
 	case fbsemantic.ExpressionMemberExpression:
