@@ -19,6 +19,26 @@ type result struct {
 	aborted  chan struct{}
 }
 
+func (s *result) SetRoad(m map[string]int, m2 map[string]string, transformation *Transformation, state *ExecutionState) {
+	panic("implement me")
+}
+
+func (s *result) GetRoad(s2 string, i int) (*ConsecutiveTransport, *Transformation) {
+	panic("implement me")
+}
+
+func (s *result) GetEs() *ExecutionState {
+	panic("implement me")
+}
+
+func (s *result) ChangeDataset() {
+	panic("implement me")
+}
+
+func (s *result) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (s *result) ProcessTbl(id DatasetID, tbls []flux.Table) error {
 	for i := 0; i < len(tbls); i++ {
 
@@ -107,7 +127,7 @@ func (s *result) UpdateProcessingTime(id DatasetID, t Time) error {
 	return nil
 }
 
-func (s *result) Finish(id DatasetID, err error) {
+func (s *result) Finish(id DatasetID, err error, windowModel bool) {
 	if err != nil {
 		select {
 		case s.tables <- resultMessage{

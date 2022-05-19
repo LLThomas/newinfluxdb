@@ -7,6 +7,7 @@ import (
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
+	"sync"
 )
 
 const HourSelectionKind = "hourSelection"
@@ -121,6 +122,22 @@ type hourSelectionTransformation struct {
 	timeCol string
 }
 
+func (t *hourSelectionTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *hourSelectionTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *hourSelectionTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *hourSelectionTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *hourSelectionTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -189,6 +206,6 @@ func (t *hourSelectionTransformation) UpdateWatermark(id execute.DatasetID, mark
 func (t *hourSelectionTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *hourSelectionTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *hourSelectionTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

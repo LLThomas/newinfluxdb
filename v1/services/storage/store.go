@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/influxdata/flux/execute"
 	"sort"
 	"time"
 
@@ -179,8 +178,10 @@ func (s *Store) ReadFilter(ctx context.Context, req *datatypes.ReadFilterRequest
 		return nil, nil
 	}
 
-	execute.MyCTX = ctx
-	execute.MyShards = s.TSDBStore.Shards(shardIDs)
+	//execute.MyCTX = ctx
+	//execute.MyShards = s.TSDBStore.Shards(shardIDs)
+	ctx = context.WithValue(ctx, "MyCTX", ctx)
+	ctx = context.WithValue(ctx, "MyShards", s.TSDBStore.Shards(shardIDs))
 
 	var cur reads.SeriesCursor
 	if ic, err := newIndexSeriesCursor(ctx, req.Predicate, s.TSDBStore.Shards(shardIDs)); err != nil {

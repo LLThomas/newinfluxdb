@@ -2,6 +2,7 @@ package universe
 
 import (
 	"sort"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
@@ -101,6 +102,22 @@ type modeTransformation struct {
 	cache execute.TableBuilderCache
 
 	column string
+}
+
+func (t *modeTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *modeTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *modeTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *modeTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *modeTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -565,6 +582,6 @@ func (t *modeTransformation) UpdateWatermark(id execute.DatasetID, mark execute.
 func (t *modeTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *modeTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *modeTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

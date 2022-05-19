@@ -6,6 +6,7 @@ import (
 	"math"
 	"regexp"
 	"sort"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
@@ -140,6 +141,22 @@ type histogramTransformation struct {
 	spec HistogramProcedureSpec
 }
 
+func (t *histogramTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *histogramTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *histogramTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *histogramTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *histogramTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -246,8 +263,8 @@ func (t *histogramTransformation) UpdateWatermark(id execute.DatasetID, mark exe
 func (t *histogramTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *histogramTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *histogramTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 // linearBins is a helper function for creating bins spaced linearly

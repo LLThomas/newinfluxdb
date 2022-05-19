@@ -6,6 +6,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"log"
+	"os"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -28,7 +29,7 @@ type Transport interface {
 }
 
 // consecutiveTransport implements Transport by transporting data consecutively to the downstream Transformation.
-type consecutiveTransport struct {
+type ConsecutiveTransport struct {
 	ctx        context.Context
 	dispatcher Dispatcher
 	logger     *zap.Logger
@@ -49,24 +50,40 @@ type consecutiveTransport struct {
 	whichPipeThread int
 }
 
-func (t *consecutiveTransport) ProcessTbl(id DatasetID, tbls []flux.Table) error {
+func (t *ConsecutiveTransport) SetRoad(m map[string]int, m2 map[string]string, transformation *Transformation, state *ExecutionState) {
 	panic("implement me")
 }
 
-func (t *consecutiveTransport) ClearCache() error {
+func (t *ConsecutiveTransport) GetRoad(s string, i int) (*ConsecutiveTransport, *Transformation) {
+	panic("implement me")
+}
+
+func (t *ConsecutiveTransport) GetEs() *ExecutionState {
+	panic("implement me")
+}
+
+func (t *ConsecutiveTransport) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
+func (t *ConsecutiveTransport) ProcessTbl(id DatasetID, tbls []flux.Table) error {
+	panic("implement me")
+}
+
+func (t *ConsecutiveTransport) ClearCache() error {
 	panic("not implement")
 }
 
-func (t *consecutiveTransport) startPipeWorker(ctx context.Context) {
+func (t *ConsecutiveTransport) startPipeWorker(ctx context.Context) {
 	t.worker.Start(t, ctx)
 }
 
-func (t *consecutiveTransport) PushToChannel(b []flux.Table)  {
+func (t *ConsecutiveTransport) PushToChannel(b []flux.Table)  {
 	t.worker.message <- b
 }
 
-func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Transformation, n plan.Node, logger *zap.Logger) *consecutiveTransport {
-	return &consecutiveTransport{
+func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Transformation, n plan.Node, logger *zap.Logger) *ConsecutiveTransport {
+	return &ConsecutiveTransport{
 		ctx:        ctx,
 		dispatcher: dispatcher,
 		logger:     logger,
@@ -80,7 +97,7 @@ func newConsecutiveTransport(ctx context.Context, dispatcher Dispatcher, t Trans
 	}
 }
 
-func (t *consecutiveTransport) sourceInfo() string {
+func (t *ConsecutiveTransport) sourceInfo() string {
 	if len(t.stack) == 0 {
 		return ""
 	}
@@ -101,7 +118,7 @@ func (t *consecutiveTransport) sourceInfo() string {
 	entry := t.stack[0]
 	return fmt.Sprintf("@%s: %s", entry.Location, entry.FunctionName)
 }
-func (t *consecutiveTransport) setErr(err error) {
+func (t *ConsecutiveTransport) setErr(err error) {
 	t.errMu.Lock()
 	msg := "runtime error"
 	if srcInfo := t.sourceInfo(); srcInfo != "" {
@@ -111,18 +128,18 @@ func (t *consecutiveTransport) setErr(err error) {
 	t.errValue = err
 	t.errMu.Unlock()
 }
-func (t *consecutiveTransport) err() error {
+func (t *ConsecutiveTransport) err() error {
 	t.errMu.Lock()
 	err := t.errValue
 	t.errMu.Unlock()
 	return err
 }
 
-func (t *consecutiveTransport) Finished() <-chan struct{} {
+func (t *ConsecutiveTransport) Finished() <-chan struct{} {
 	return t.finished
 }
 
-func (t *consecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) error {
+func (t *ConsecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) error {
 	select {
 	case <-t.finished:
 		return t.err()
@@ -135,7 +152,7 @@ func (t *consecutiveTransport) RetractTable(id DatasetID, key flux.GroupKey) err
 	return nil
 }
 
-func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
+func (t *ConsecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 	// There is duplicate defination below.
 	select {
 	case <-t.finished:
@@ -149,7 +166,7 @@ func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 	return nil
 }
 
-func (t *consecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
+func (t *ConsecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
 	select {
 	case <-t.finished:
 		return t.err()
@@ -162,7 +179,7 @@ func (t *consecutiveTransport) UpdateWatermark(id DatasetID, time Time) error {
 	return nil
 }
 
-func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) error {
+func (t *ConsecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) error {
 	select {
 	case <-t.finished:
 		return t.err()
@@ -175,7 +192,7 @@ func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) err
 	return nil
 }
 
-//func (t *consecutiveTransport) Finish(id DatasetID, err error) {
+//func (t *ConsecutiveTransport) Finish(id DatasetID, err error) {
 //	select {
 //	case <-t.finished:
 //		return
@@ -191,17 +208,18 @@ func (t *consecutiveTransport) UpdateProcessingTime(id DatasetID, time Time) err
 // pipeline connectors
 // ***********************************************************
 
-func (t *consecutiveTransport) ProcessTbls(id DatasetID, tbls []flux.Table) error {
+func (t *ConsecutiveTransport) ProcessTbls(id DatasetID, tbls []flux.Table, WG *sync.WaitGroup) error {
 	select {
 	case <-t.finished:
 		return t.err()
 	default:
 	}
+	t.ctx = context.WithValue(t.ctx, "WG", WG)
 	t.worker.message <- tbls
 	return nil
 }
 
-//func (t *consecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
+//func (t *ConsecutiveTransport) Process(id DatasetID, tbl flux.Table) error {
 //	select {
 //	case <-t.finished:
 //		return t.err()
@@ -214,14 +232,14 @@ func (t *consecutiveTransport) ProcessTbls(id DatasetID, tbls []flux.Table) erro
 //	return nil
 //}
 
-func (t *consecutiveTransport) Finish(id DatasetID, err error) {
+func (t *ConsecutiveTransport) Finish(id DatasetID, err error, windowModel bool) {
 	select {
 	case <-t.finished:
 		return
 	default:
 	}
 
-	if !WindowModel {
+	if !windowModel {
 		t.pushMsg(&finishMsg{
 			srcMessage: srcMessage(id),
 			err:        err,
@@ -234,7 +252,7 @@ func (t *consecutiveTransport) Finish(id DatasetID, err error) {
 // ***********************************************************
 // ***********************************************************
 
-func (t *consecutiveTransport) pushMsg(m Message) {
+func (t *ConsecutiveTransport) pushMsg(m Message) {
 	t.messages.Push(m)
 	atomic.AddInt32(&t.inflight, 1)
 	t.schedule()
@@ -248,23 +266,23 @@ const (
 )
 
 // schedule indicates that there is work available to schedule.
-func (t *consecutiveTransport) schedule() {
+func (t *ConsecutiveTransport) schedule() {
 	if t.tryTransition(idle, running) {
 		t.dispatcher.Schedule(t.processMessages)
 	}
 }
 
 // tryTransition attempts to transition into the new state and returns true on success.
-func (t *consecutiveTransport) tryTransition(old, new int32) bool {
+func (t *ConsecutiveTransport) tryTransition(old, new int32) bool {
 	return atomic.CompareAndSwapInt32(&t.schedulerState, old, new)
 }
 
 // transition sets the new state.
-func (t *consecutiveTransport) transition(new int32) {
+func (t *ConsecutiveTransport) transition(new int32) {
 	atomic.StoreInt32(&t.schedulerState, new)
 }
 
-func (t *consecutiveTransport) processMessages(ctx context.Context, throughput int) {
+func (t *ConsecutiveTransport) processMessages(ctx context.Context, throughput int) {
 PROCESS:
 	i := 0
 	for m := t.messages.Pop(); m != nil; m = t.messages.Pop() {
@@ -275,9 +293,14 @@ PROCESS:
 
 			// Transition to the finished state.
 			if t.tryTransition(running, finished) {
+
+				if t.ctx.Value("WindowModel") == nil {
+					log.Println("processMessages: (WindowModel) is nil!!")
+				}
+
 				// Call Finish if we have not already
 				if !f {
-					t.t.Finish(m.SrcDatasetID(), t.err())
+					t.t.Finish(m.SrcDatasetID(), t.err(), t.ctx.Value("WindowModel").(bool))
 				}
 				// We are finished
 				close(t.finished)
@@ -304,32 +327,34 @@ PROCESS:
 	}
 }
 
-func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m []flux.Table)  {
+func (t *ConsecutiveTransport) pipeProcesses(ctx context.Context, m []flux.Table)  {
 
 	//log.Println("pipeProcesses: ", t.whichPipeThread, m[0].Key().String())
 
-	if f, err := pipeProcess(ctx, t.t, m); err != nil || f {
+
+	if f, err := pipeProcess(ctx, t.ctx, t.t, m); err != nil || f {
 
 		//log.Println("f or err: ", f, err)
 
 		// err will go to the channel executor.go:336 TODO
 		t.setErr(err)
 
+
 		if !f {
 			log.Println("consecutiveTransport error: ", err)
-			t.t.Finish(DatasetID{0}, t.err())
+			t.t.Finish(DatasetID{0}, t.err(), true)
 		}
 
 		// send finishMsg to next operator before stop this pipe worker
 		//nextOperator := OperatorMap[t.Label()]
-		nextOperator := FindNextOperator(t.Label(), t.whichPipeThread)
+		nextOperator, ResOperator := t.t.GetRoad(t.Label(), t.whichPipeThread)
 		if nextOperator == nil {
-			atomic.AddInt32(&ExecutionState.numFinishMsgCount, 1)
+			atomic.AddInt32(&t.t.GetEs().numFinishMsgCount, 1)
 
 			//log.Println("pipeprocess finish: ", atomic.LoadInt32(&ExecutionState.numFinishMsgCount))
 
-			if int(atomic.LoadInt32(&ExecutionState.numFinishMsgCount)) == len(ExecutionState.ESmultiThreadPipeLine) {
-				ResOperator.Finish(DatasetID{0}, nil)
+			if int(atomic.LoadInt32(&t.t.GetEs().numFinishMsgCount)) == len(t.t.GetEs().ESmultiThreadPipeLine) {
+				(*ResOperator).Finish(DatasetID{0}, nil, true)
 			}
 		} else {
 			nextOperator.PushToChannel(nil)
@@ -345,7 +370,7 @@ func (t *consecutiveTransport) pipeProcesses(ctx context.Context, m []flux.Table
 
 }
 
-func pipeProcess(ctx context.Context, t Transformation, m []flux.Table) (finished bool, err error) {
+func pipeProcess(ctx context.Context, t_ctx context.Context, t Transformation, m []flux.Table) (finished bool, err error) {
 
 	// table is nil means finish msg
 	// 1. if we have next operator , send finishMsg to it
@@ -362,6 +387,11 @@ func pipeProcess(ctx context.Context, t Transformation, m []flux.Table) (finishe
 	}
 
 	_, span := StartSpanFromContext(ctx, reflect.TypeOf(t).String(), t.Label())
+
+	if t_ctx.Value("WG") != nil {
+		t.SetWG(t_ctx.Value("WG").(*sync.WaitGroup))
+	}
+
 	err = t.ProcessTbl(DatasetID(uuid.Nil), m)
 	if span != nil {
 		span.Finish()
@@ -371,11 +401,11 @@ func pipeProcess(ctx context.Context, t Transformation, m []flux.Table) (finishe
 
 }
 
-func (t *consecutiveTransport) Label() string {
+func (t *ConsecutiveTransport) Label() string {
 	return t.t.Label()
 }
 
-func (t *consecutiveTransport) SetLabel(label string) {
+func (t *ConsecutiveTransport) SetLabel(label string) {
 	t.t.SetLabel(label)
 }
 
@@ -397,7 +427,14 @@ func processMessage(ctx context.Context, t Transformation, m Message) (finished 
 	case UpdateProcessingTimeMsg:
 		err = t.UpdateProcessingTime(m.SrcDatasetID(), m.ProcessingTime())
 	case FinishMsg:
-		t.Finish(m.SrcDatasetID(), m.Error())
+
+		log.Println("processMessgae: (WindowModel) ", ctx.Value("WindowModel"))
+		if ctx.Value("WindowModel") == nil {
+			log.Println("processMessgae: (WindowModel) is nil!!")
+			os.Exit(0)
+		}
+
+		t.Finish(m.SrcDatasetID(), m.Error(), ctx.Value("WindowModel").(bool))
 		finished = true
 	}
 	return
@@ -512,7 +549,7 @@ func (m *finishMsg) Error() error {
 // consecutiveTransportTable is a flux.Table that is being processed
 // within a consecutiveTransport.
 type consecutiveTransportTable struct {
-	transport *consecutiveTransport
+	transport *ConsecutiveTransport
 	tbl       flux.Table
 }
 
@@ -528,7 +565,7 @@ func (t *consecutiveTransportTable) BlockIterator(operationLable int) (flux.ColR
 	panic("implement me")
 }
 
-func newConsecutiveTransportTable(t *consecutiveTransport, tbl flux.Table) flux.Table {
+func newConsecutiveTransportTable(t *ConsecutiveTransport, tbl flux.Table) flux.Table {
 	return &consecutiveTransportTable{
 		transport: t,
 		tbl:       tbl,

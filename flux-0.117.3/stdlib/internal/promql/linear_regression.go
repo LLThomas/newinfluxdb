@@ -2,6 +2,7 @@ package promql
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -109,6 +110,22 @@ type linearRegressionTransformation struct {
 
 	predict bool
 	fromNow float64
+}
+
+func (t *linearRegressionTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *linearRegressionTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *linearRegressionTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *linearRegressionTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *linearRegressionTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -235,6 +252,6 @@ func (t *linearRegressionTransformation) UpdateWatermark(id execute.DatasetID, m
 func (t *linearRegressionTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *linearRegressionTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *linearRegressionTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

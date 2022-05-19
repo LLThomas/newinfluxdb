@@ -8,6 +8,7 @@ import (
 	"github.com/influxdata/flux/memory"
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/values"
+	"sync"
 )
 
 type selectorTransformation struct {
@@ -43,6 +44,22 @@ type rowSelectorTransformation struct {
 	selector RowSelector
 }
 
+func (t *rowSelectorTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *Transformation, state *ExecutionState) {
+	panic("implement me")
+}
+
+func (t *rowSelectorTransformation) GetRoad(s string, i int) (*ConsecutiveTransport, *Transformation) {
+	panic("implement me")
+}
+
+func (t *rowSelectorTransformation) GetEs() *ExecutionState {
+	panic("implement me")
+}
+
+func (t *rowSelectorTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *rowSelectorTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -54,6 +71,22 @@ func (t *rowSelectorTransformation) ClearCache() error {
 type indexSelectorTransformation struct {
 	selectorTransformation
 	selector IndexSelector
+}
+
+func (t *indexSelectorTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *Transformation, state *ExecutionState) {
+	panic("implement me")
+}
+
+func (t *indexSelectorTransformation) GetRoad(s string, i int) (*ConsecutiveTransport, *Transformation) {
+	panic("implement me")
+}
+
+func (t *indexSelectorTransformation) GetEs() *ExecutionState {
+	panic("implement me")
+}
+
+func (t *indexSelectorTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *indexSelectorTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) error {
@@ -109,8 +142,8 @@ func (t *selectorTransformation) UpdateWatermark(id DatasetID, mark Time) error 
 func (t *selectorTransformation) UpdateProcessingTime(id DatasetID, pt Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *selectorTransformation) Finish(id DatasetID, err error) {
-	t.d.Finish(err)
+func (t *selectorTransformation) Finish(id DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func (t *selectorTransformation) setupBuilder(tbl flux.Table) (TableBuilder, int, error) {

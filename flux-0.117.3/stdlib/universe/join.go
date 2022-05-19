@@ -242,6 +242,22 @@ type mergeJoinTransformation struct {
 	keys []string
 }
 
+func (t *mergeJoinTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *mergeJoinTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *mergeJoinTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *mergeJoinTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *mergeJoinTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -343,7 +359,7 @@ func (t *mergeJoinTransformation) UpdateProcessingTime(id execute.DatasetID, pt 
 	return t.d.UpdateProcessingTime(min)
 }
 
-func (t *mergeJoinTransformation) Finish(id execute.DatasetID, err error) {
+func (t *mergeJoinTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -359,7 +375,7 @@ func (t *mergeJoinTransformation) Finish(id execute.DatasetID, err error) {
 	}
 
 	if finished {
-		t.d.Finish(t.err)
+		t.d.Finish(t.err, windowModel)
 	}
 }
 

@@ -3,6 +3,7 @@ package universe
 import (
 	"context"
 	"sort"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
@@ -148,6 +149,22 @@ type groupTransformation struct {
 
 	mode flux.GroupMode
 	keys []string
+}
+
+func (t *groupTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *groupTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *groupTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *groupTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *groupTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -370,8 +387,8 @@ func (t *groupTransformation) UpdateProcessingTime(id execute.DatasetID, ts exec
 	return t.d.UpdateProcessingTime(ts)
 }
 
-func (t *groupTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *groupTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 // `MergeGroupRule` merges two group operations and keeps only the last one

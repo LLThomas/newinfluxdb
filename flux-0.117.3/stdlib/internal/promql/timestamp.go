@@ -2,6 +2,7 @@ package promql
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/values"
@@ -74,6 +75,22 @@ type timestampTransformation struct {
 	execute.ExecutionNode
 	d     execute.Dataset
 	cache execute.TableBuilderCache
+}
+
+func (t *timestampTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *timestampTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *timestampTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *timestampTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *timestampTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -151,6 +168,6 @@ func (t *timestampTransformation) UpdateProcessingTime(id execute.DatasetID, pt 
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *timestampTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *timestampTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

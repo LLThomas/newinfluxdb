@@ -13,6 +13,10 @@ type dataset struct {
 	cache *table.BuilderCache
 }
 
+func (d *dataset) GetRoad(s string, i int) (*execute.ConsecutiveTransport, execute.Transformation) {
+	panic("implement me")
+}
+
 func (d *dataset) ClearCache() error {
 	var err error
 	d.cache.ForEach(func(key flux.GroupKey, builder table.Builder) error {
@@ -59,7 +63,7 @@ func (d *dataset) RetractTable(key flux.GroupKey) error {
 	return d.ts.RetractTable(d.id, key)
 }
 
-func (d *dataset) Finish(err error) {
+func (d *dataset) Finish(err error, windowModel bool) {
 	if err == nil {
 		err = d.cache.ForEach(func(key flux.GroupKey, builder table.Builder) error {
 			tbl, err := builder.Table()
@@ -69,5 +73,5 @@ func (d *dataset) Finish(err error) {
 			return d.ts.Process(d.id, tbl)
 		})
 	}
-	d.ts.Finish(d.id, err)
+	d.ts.Finish(d.id, err, windowModel)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
+	"sync"
 )
 
 const RelativeStrengthIndexKind = "relativeStrengthIndex"
@@ -126,6 +127,22 @@ type relativeStrengthIndexTransformation struct {
 	emaUp   moving_average.ExponentialMovingAverage
 	emaDown moving_average.ExponentialMovingAverage
 	lastVal []interface{}
+}
+
+func (t *relativeStrengthIndexTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *relativeStrengthIndexTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *relativeStrengthIndexTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *relativeStrengthIndexTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *relativeStrengthIndexTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -334,6 +351,6 @@ func (t *relativeStrengthIndexTransformation) UpdateProcessingTime(id execute.Da
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *relativeStrengthIndexTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *relativeStrengthIndexTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

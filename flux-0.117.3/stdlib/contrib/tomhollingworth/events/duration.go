@@ -1,6 +1,7 @@
 package events
 
 import (
+	"sync"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -159,6 +160,22 @@ type durationTransformation struct {
 	whichPipeThread int
 }
 
+func (t *durationTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *durationTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *durationTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *durationTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *durationTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -194,8 +211,8 @@ func (t *durationTransformation) UpdateProcessingTime(id execute.DatasetID, pt e
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *durationTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *durationTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func (t *durationTransformation) Process(id execute.DatasetID, tbl flux.Table) error {

@@ -1,6 +1,7 @@
 package universe
 
 import (
+	"sync"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -124,6 +125,22 @@ type elapsedTransformation struct {
 	columnName string
 }
 
+func (t *elapsedTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *elapsedTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *elapsedTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *elapsedTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *elapsedTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -155,8 +172,8 @@ func (t *elapsedTransformation) UpdateProcessingTime(id execute.DatasetID, pt ex
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *elapsedTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *elapsedTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func (t *elapsedTransformation) Process(id execute.DatasetID, tbl flux.Table) error {

@@ -7,6 +7,7 @@ import (
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
+	"sync"
 )
 
 const TailKind = "tail"
@@ -104,6 +105,22 @@ type tailTransformation struct {
 	cache execute.TableBuilderCache
 
 	n, offset int
+}
+
+func (t *tailTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *tailTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *tailTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *tailTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *tailTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -204,6 +221,6 @@ func (t *tailTransformation) UpdateWatermark(id execute.DatasetID, mark execute.
 func (t *tailTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *tailTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *tailTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
@@ -260,6 +261,22 @@ type ToMQTTTransformation struct {
 	spec  *ToMQTTProcedureSpec
 }
 
+func (t *ToMQTTTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *ToMQTTTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *ToMQTTTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *ToMQTTTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *ToMQTTTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -501,6 +518,6 @@ func (t *ToMQTTTransformation) UpdateWatermark(id execute.DatasetID, pt execute.
 func (t *ToMQTTTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *ToMQTTTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *ToMQTTTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

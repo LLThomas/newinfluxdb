@@ -2,6 +2,7 @@ package debug
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/memory"
 	"github.com/influxdata/flux"
@@ -82,6 +83,22 @@ type slurpTransformation struct {
 	mem memory.Allocator
 }
 
+func (t *slurpTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *slurpTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *slurpTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *slurpTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *slurpTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -128,6 +145,6 @@ func (t *slurpTransformation) UpdateWatermark(id execute.DatasetID, mark execute
 func (t *slurpTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *slurpTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *slurpTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

@@ -3,10 +3,10 @@ package execute
 import (
 	"context"
 	"fmt"
-
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/memory"
 	"github.com/influxdata/flux/plan"
+	"sync"
 )
 
 // Transformation represents functions that stream a set of tables, performs
@@ -21,11 +21,15 @@ type Transformation interface {
 	UpdateProcessingTime(id DatasetID, t Time) error
 	// Finish indicates that the Transformation is done processing. It is
 	// the last method called on the Transformation
-	Finish(id DatasetID, err error)
+	Finish(id DatasetID, err error, windowModel bool)
 	SetLabel(label string)
 	Label() string
 
 	ClearCache() error
+	SetWG(WG *sync.WaitGroup)
+	SetRoad(map[string]int, map[string]string, *Transformation, *ExecutionState)
+	GetRoad(string, int) (*ConsecutiveTransport, *Transformation)
+	GetEs() *ExecutionState
 }
 
 // TransformationSet is a group of transformations.
@@ -81,9 +85,9 @@ func (ts TransformationSet) UpdateProcessingTime(id DatasetID, time Time) error 
 	return nil
 }
 
-func (ts TransformationSet) Finish(id DatasetID, err error) {
+func (ts TransformationSet) Finish(id DatasetID, err error, windowModel bool) {
 	for _, t := range ts {
-		t.Finish(id, err)
+		t.Finish(id, err, windowModel)
 	}
 }
 

@@ -3,6 +3,7 @@ package universe
 import (
 	"context"
 	"sort"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
@@ -121,6 +122,22 @@ type reduceTransformation struct {
 	whichPipeThread int
 }
 
+func (t *reduceTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *reduceTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *reduceTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *reduceTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *reduceTransformation) ClearCache() error {
 	return t.d.ClearCache()
 }
@@ -138,8 +155,9 @@ func NewReduceTransformation(ctx context.Context, spec *ReduceProcedureSpec, d e
 
 func (t *reduceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 
-	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
-	resOperator := execute.ResOperator
+	//nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	//resOperator := execute.ResOperator
+	nextOperator, resOperator := t.GetRoad(t.Label(), t.whichPipeThread)
 
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
@@ -223,7 +241,7 @@ func (t *reduceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 
 	// send table to next operator
 	if nextOperator == nil {
-		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+		(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
 	} else {
 		nextOperator.PushToChannel(tables)
 	}
@@ -339,6 +357,6 @@ func (t *reduceTransformation) UpdateWatermark(id execute.DatasetID, mark execut
 func (t *reduceTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *reduceTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *reduceTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

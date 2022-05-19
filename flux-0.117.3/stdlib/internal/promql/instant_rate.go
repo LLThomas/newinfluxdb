@@ -5,6 +5,7 @@ package promql
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -101,6 +102,22 @@ type instantRateTransformation struct {
 	cache execute.TableBuilderCache
 
 	isRate bool
+}
+
+func (t *instantRateTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *instantRateTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *instantRateTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *instantRateTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *instantRateTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -214,6 +231,6 @@ func (t *instantRateTransformation) UpdateWatermark(id execute.DatasetID, mark e
 func (t *instantRateTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *instantRateTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *instantRateTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

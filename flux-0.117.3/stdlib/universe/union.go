@@ -89,6 +89,22 @@ type unionTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *unionTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *unionTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *unionTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *unionTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *unionTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -184,14 +200,14 @@ func (t *unionTransformation) UpdateProcessingTime(id execute.DatasetID, pt exec
 	return t.d.UpdateProcessingTime(min)
 }
 
-func (t *unionTransformation) Finish(id execute.DatasetID, err error) {
+func (t *unionTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	t.parentState[id].finished = true
 
 	if err != nil {
-		t.d.Finish(err)
+		t.d.Finish(err, windowModel)
 	}
 
 	finished := true
@@ -200,6 +216,6 @@ func (t *unionTransformation) Finish(id execute.DatasetID, err error) {
 	}
 
 	if finished {
-		t.d.Finish(nil)
+		t.d.Finish(nil, windowModel)
 	}
 }

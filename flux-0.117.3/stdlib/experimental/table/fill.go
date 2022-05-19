@@ -2,6 +2,7 @@ package table
 
 import (
 	"context"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -76,6 +77,22 @@ type fillTransformation struct {
 	mem memory.Allocator
 }
 
+func (t *fillTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *fillTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *fillTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *fillTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *fillTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -129,8 +146,8 @@ func (t *fillTransformation) RetractTable(id execute.DatasetID, key flux.GroupKe
 	return t.d.RetractTable(key)
 }
 
-func (t *fillTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *fillTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 type IdempotentTableFill struct{}

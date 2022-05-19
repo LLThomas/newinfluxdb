@@ -5,6 +5,7 @@ package promql
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -112,6 +113,22 @@ type extrapolatedRateTransformation struct {
 
 	isCounter bool
 	isRate    bool
+}
+
+func (t *extrapolatedRateTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *extrapolatedRateTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *extrapolatedRateTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *extrapolatedRateTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *extrapolatedRateTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -279,6 +296,6 @@ func (t *extrapolatedRateTransformation) UpdateWatermark(id execute.DatasetID, m
 func (t *extrapolatedRateTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *extrapolatedRateTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *extrapolatedRateTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

@@ -1,6 +1,7 @@
 package universe
 
 import (
+	"sync"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -131,6 +132,22 @@ type integralTransformation struct {
 	cache execute.TableBuilderCache
 
 	spec IntegralProcedureSpec
+}
+
+func (t *integralTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *integralTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *integralTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *integralTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *integralTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -297,8 +314,8 @@ func (t *integralTransformation) UpdateWatermark(id execute.DatasetID, mark exec
 func (t *integralTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *integralTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *integralTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func newIntegral(unit time.Duration, start, stop execute.Time, interpolate bool) *integral {

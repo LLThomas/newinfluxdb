@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	arrowmemory "github.com/apache/arrow/go/arrow/memory"
@@ -193,6 +194,22 @@ type pivotTransformation struct {
 	colKeyMaps map[string]map[string]int
 	rowKeyMaps map[string]map[string]int
 	nextRowCol map[string]rowCol
+}
+
+func (t *pivotTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *pivotTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *pivotTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *pivotTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *pivotTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -427,9 +444,9 @@ func (t *pivotTransformation) UpdateProcessingTime(id execute.DatasetID, pt exec
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *pivotTransformation) Finish(id execute.DatasetID, err error) {
+func (t *pivotTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
 
-	t.d.Finish(err)
+	t.d.Finish(err, windowModel)
 }
 
 // pivotTransformation2 is an optimized version of pivot.
@@ -446,6 +463,22 @@ type pivotTransformation2 struct {
 
 	watermark  execute.Time
 	processing execute.Time
+}
+
+func (t *pivotTransformation2) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *pivotTransformation2) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *pivotTransformation2) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *pivotTransformation2) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *pivotTransformation2) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -637,11 +670,11 @@ func (t *pivotTransformation2) UpdateProcessingTime(id execute.DatasetID, mark e
 	return nil
 }
 
-func (t *pivotTransformation2) Finish(id execute.DatasetID, err error) {
+func (t *pivotTransformation2) Finish(id execute.DatasetID, err error, windowModel bool) {
 	// Inform the downstream dataset that we are finished.
 	// Wrap this in a function so that we do not capture the err variable.
 	// https://play.golang.org/p/QXns3c8s76f
-	defer func() { t.d.Finish(err) }()
+	defer func() { t.d.Finish(err, windowModel) }()
 
 	t.groups.Range(func(key flux.GroupKey, value interface{}) {
 		if err != nil {

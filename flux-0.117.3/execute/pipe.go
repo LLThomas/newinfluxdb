@@ -41,7 +41,7 @@ func newPipeWorker(t Transformation, logger *zap.Logger) *pipeWorker {
 	}
 }
 
-func (p *pipeWorker) Start(ct *consecutiveTransport, ctx context.Context)  {
+func (p *pipeWorker) Start(ct *ConsecutiveTransport, ctx context.Context)  {
 	p.wg.Add(1)
 	go func() {
 		defer p.wg.Done()
@@ -110,7 +110,7 @@ func (p *pipeWorker) Stop() error {
 	return p.err
 }
 
-func (p *pipeWorker) run(ct *consecutiveTransport,ctx context.Context)  {
+func (p *pipeWorker) run(ct *ConsecutiveTransport,ctx context.Context)  {
 	for  {
 		select {
 		case <-ctx.Done():

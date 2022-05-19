@@ -1,6 +1,7 @@
 package universe
 
 import (
+	"sync"
 	"time"
 
 	"github.com/apache/arrow/go/arrow/array"
@@ -147,6 +148,22 @@ type derivativeTransformation struct {
 	timeCol     string
 }
 
+func (t *derivativeTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *derivativeTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *derivativeTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *derivativeTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *derivativeTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -239,8 +256,8 @@ func (t *derivativeTransformation) UpdateWatermark(id execute.DatasetID, mark ex
 func (t *derivativeTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *derivativeTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *derivativeTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 const derivativeUnsortedTimeErr = "derivative found out-of-order times in time column"

@@ -7,6 +7,7 @@ import (
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
+	"sync"
 )
 
 const UniqueKind = "unique"
@@ -99,6 +100,22 @@ type uniqueTransformation struct {
 	cache execute.TableBuilderCache
 
 	column string
+}
+
+func (t *uniqueTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *uniqueTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *uniqueTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *uniqueTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *uniqueTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -259,6 +276,6 @@ func (t *uniqueTransformation) UpdateWatermark(id execute.DatasetID, mark execut
 func (t *uniqueTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *uniqueTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *uniqueTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

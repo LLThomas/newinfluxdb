@@ -3,6 +3,7 @@ package universe
 import (
 	"context"
 	"sort"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
@@ -120,6 +121,36 @@ type mapTransformation struct {
 	mergeKey bool
 
 	whichPipeThread int
+	OperatorIndex 	map[string]int
+	OperatorMap 	map[string]string
+	ResOperator		*execute.Transformation
+	ExecutionState 	*execute.ExecutionState
+}
+
+func (t *mapTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	t.OperatorIndex = m
+	t.OperatorMap = m2
+	t.ResOperator = transformation
+	t.ExecutionState = state
+}
+
+func (t *mapTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	nextOperatorString := ""
+	if t.OperatorMap[s] != "" {
+		nextOperatorString = t.OperatorMap[s]
+	}
+	if nextOperatorString == "" {
+		return nil, t.ResOperator
+	}
+	return t.ExecutionState.ESmultiThreadPipeLine[i].Worker[t.OperatorIndex[nextOperatorString]], t.ResOperator
+}
+
+func (t *mapTransformation) GetEs() *execute.ExecutionState {
+	return t.ExecutionState
+}
+
+func (t *mapTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *mapTransformation) ClearCache() error {
@@ -144,8 +175,9 @@ func (t *mapTransformation) RetractTable(id execute.DatasetID, key flux.GroupKey
 
 func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 
-	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
-	resOperator := execute.ResOperator
+	//nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	//resOperator := execute.ResOperator
+	nextOperator, resOperator := t.GetRoad(t.Label(), t.whichPipeThread)
 
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
@@ -217,7 +249,7 @@ func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) 
 
 	// send table to next operator
 	if nextOperator == nil {
-		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+		(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
 	} else {
 		nextOperator.PushToChannel(tables)
 	}
@@ -437,6 +469,6 @@ func (t *mapTransformation) UpdateWatermark(id execute.DatasetID, mark execute.T
 func (t *mapTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *mapTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *mapTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

@@ -108,7 +108,7 @@ func (s *tableSource) Run(ctx context.Context) {
 	}
 
 	for _, t := range s.ts {
-		t.Finish(s.id, err)
+		t.Finish(s.id, err, false)
 	}
 }
 

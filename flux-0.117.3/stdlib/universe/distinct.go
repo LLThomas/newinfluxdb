@@ -8,6 +8,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/values"
+	"sync"
 )
 
 const DistinctKind = "distinct"
@@ -100,6 +101,22 @@ type distinctTransformation struct {
 	cache execute.TableBuilderCache
 
 	column string
+}
+
+func (t *distinctTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *distinctTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *distinctTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *distinctTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *distinctTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -360,6 +377,6 @@ func (t *distinctTransformation) UpdateWatermark(id execute.DatasetID, mark exec
 func (t *distinctTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *distinctTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *distinctTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

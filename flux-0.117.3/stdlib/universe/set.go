@@ -8,6 +8,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/values"
+	"sync"
 )
 
 const SetKind = "set"
@@ -101,6 +102,22 @@ type setTransformation struct {
 	key, value string
 }
 
+func (t *setTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *setTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *setTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *setTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *setTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -185,6 +202,6 @@ func (t *setTransformation) UpdateWatermark(id execute.DatasetID, mark execute.T
 func (t *setTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *setTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *setTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

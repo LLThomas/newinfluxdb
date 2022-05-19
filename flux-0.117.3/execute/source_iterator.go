@@ -2,6 +2,7 @@ package execute
 
 import (
 	"context"
+	"log"
 
 	"github.com/influxdata/flux"
 )
@@ -82,8 +83,12 @@ func (c *sourceDecoder) Run(ctx context.Context) {
 		return nil
 	})
 
+	if ctx.Value("WindowModel") == nil {
+		log.Println("sourceDecoder: (WindowModel) is nil!!")
+	}
+
 	for _, t := range c.ts {
-		t.Finish(c.id, err)
+		t.Finish(c.id, err, ctx.Value("WindowModel").(bool))
 	}
 }
 
@@ -115,9 +120,14 @@ func (s *sourceIterator) AddTransformation(t Transformation) {
 }
 
 func (s *sourceIterator) Run(ctx context.Context) {
+
+	if ctx.Value("WindowModel") == nil {
+		log.Println("sourceIterator: (WindowModel) is nil!!")
+	}
+
 	err := s.iterator.Do(ctx, s.processTable)
 	for _, t := range s.ts {
-		t.Finish(s.id, err)
+		t.Finish(s.id, err, ctx.Value("WindowModel").(bool))
 	}
 }
 

@@ -241,8 +241,12 @@ FINISH:
 		err = errors.Wrap(err, codes.Inherit, "error in csv.from()")
 	}
 
+	if ctx.Value("WindowModel") == nil {
+		println("from.go: (WindowModel) is nil!!")
+	}
+
 	for _, t := range c.ts {
-		t.Finish(c.id, err)
+		t.Finish(c.id, err, ctx.Value("WindowModel").(bool))
 	}
 }
 

@@ -3,7 +3,9 @@ package storageflux
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
+	"sync"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/influxdata/flux"
@@ -160,7 +162,11 @@ func (fi *filterIterator) Do(f func(flux.Table) error) error {
 
 func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.ResultSet) error {
 
-	if !execute.WindowModel {
+	if fi.ctx.Value("WindowModel") == nil {
+		log.Println("handleRead: (WindowModel) is nil !!")
+	}
+
+	if !fi.ctx.Value("WindowModel").(bool) {
 		// these resources must be closed if not nil on return
 		var (
 			cur   cursors.Cursor
@@ -249,8 +255,10 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 		allGroupKey := make([]flux.GroupKey, 0)
 		allTags := make([]models.Tags, 0)
 		allSeriesKey := make([]cursors.Cursor, 0)
+		var WG sync.WaitGroup
 		for rs.Next() {
-			execute.WG.Add(1)
+			//execute.WG.Add(1)
+			WG.Add(1)
 			tmpTags := make(models.Tags, len(rs.Tags()))
 			copy(tmpTags, rs.Tags())
 			allSeriesKey = append(allSeriesKey, rs.Cursor())
@@ -259,11 +267,12 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 		}
 
 		// split series key for each pipeline
-		pipeToGroupKey := execute.SplitSeriesKey(allSeriesKey)
+		pipeToGroupKey := execute.SplitSeriesKey(allSeriesKey, fi.ctx)
 
 		// construct table and send tables to first operator
 		allTables := make([][]flux.Table, 0)
-		mpl := execute.ExecutionState.ESmultiThreadPipeLine
+		//mpl := execute.ExecutionState.ESmultiThreadPipeLine
+		mpl := fi.ctx.Value("ESmultiThreadPipeLine").([]*execute.MultiThreadPipeLine)
 		ff := func(whichPipeThread int) {
 
 			//tables := make([]flux.Table, 0)
@@ -307,12 +316,13 @@ func (fi *filterIterator) handleRead(f func(flux.Table) error, rs storage.Result
 
 			// send table group to first operator
 			allTables = append(allTables, tables)
-			mpl[whichPipeThread].Worker[0].ProcessTbls(execute.DatasetID{0}, tables)
+			mpl[whichPipeThread].Worker[0].ProcessTbls(execute.DatasetID{0}, tables, &WG)
 		}
-		execute.DispatchAndSend(ff)
+		execute.DispatchAndSend(ff, fi.ctx)
 
 		// wait all table run closeDone() in table.go:84
-		execute.WG.Wait()
+		//execute.WG.Wait()
+		WG.Wait()
 
 		// after all tables call closeDone(), close all tables
 		// if table doesn't call Close(), there will be some problem when closing shard

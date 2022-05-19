@@ -1,6 +1,7 @@
 package universe
 
 import (
+	"sync"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -136,6 +137,22 @@ type shiftTransformation struct {
 	columns []string
 }
 
+func (t *shiftTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *shiftTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *shiftTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *shiftTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *shiftTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -220,8 +237,8 @@ func (t *shiftTransformation) UpdateProcessingTime(id execute.DatasetID, pt exec
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *shiftTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *shiftTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func (t *shiftTransformation) SetParents(ids []execute.DatasetID) {}

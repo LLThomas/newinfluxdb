@@ -3,6 +3,7 @@ package promql
 import (
 	"fmt"
 	"math"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/execute"
@@ -80,6 +81,22 @@ type changesTransformation struct {
 	execute.ExecutionNode
 	d     execute.Dataset
 	cache execute.TableBuilderCache
+}
+
+func (t *changesTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *changesTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *changesTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *changesTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *changesTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -169,6 +186,6 @@ func (t *changesTransformation) UpdateWatermark(id execute.DatasetID, mark execu
 func (t *changesTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *changesTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *changesTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

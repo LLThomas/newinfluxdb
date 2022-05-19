@@ -2,6 +2,7 @@ package universe
 
 import (
 	"math"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
@@ -112,6 +113,22 @@ type tripleExponentialDerivativeTransformation struct {
 	ema1, ema2, ema3 *moving_average.ExponentialMovingAverage
 
 	n int64
+}
+
+func (t *tripleExponentialDerivativeTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *tripleExponentialDerivativeTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *tripleExponentialDerivativeTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *tripleExponentialDerivativeTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *tripleExponentialDerivativeTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -340,8 +357,8 @@ func (t *tripleExponentialDerivativeTransformation) UpdateProcessingTime(id exec
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *tripleExponentialDerivativeTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *tripleExponentialDerivativeTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func arrayToFloatArrow(a []interface{}, alloc *memory.Allocator) *array.Float64 {

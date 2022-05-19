@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"context"
 	"math"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -151,6 +152,22 @@ func createWindowTransformation(id execute.DatasetID, mode execute.AccumulationM
 type windowTransformation struct {
 	*tableTransformation
 	spec *WindowProcedureSpec
+}
+
+func (w *windowTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (w *windowTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (w *windowTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (w *windowTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func NewWindowTransformation(ctx context.Context, spec *WindowProcedureSpec, id execute.DatasetID, mem memory.Allocator) (execute.Transformation, execute.Dataset, error) {

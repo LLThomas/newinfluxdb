@@ -2,6 +2,7 @@ package gen
 
 import (
 	"context"
+	"log"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
@@ -169,10 +170,14 @@ func (s *Source) Run(ctx context.Context) {
 	schema := s.schema
 	schema.Alloc = s.alloc
 
+	if ctx.Value("WindowModel") == nil {
+		log.Println("tables.go is nil!!")
+	}
+
 	tables, err := gen.Input(ctx, schema)
 	if err != nil {
 		for _, t := range s.ts {
-			t.Finish(s.id, err)
+			t.Finish(s.id, err, ctx.Value("WindowModel").(bool))
 		}
 		return
 	}
@@ -181,7 +186,7 @@ func (s *Source) Run(ctx context.Context) {
 		return s.processTable(ctx, table)
 	})
 	for _, t := range s.ts {
-		t.Finish(s.id, err)
+		t.Finish(s.id, err, ctx.Value("WindowModel").(bool))
 	}
 }
 

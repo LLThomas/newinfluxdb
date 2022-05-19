@@ -3,6 +3,7 @@ package experimental
 import (
 	"fmt"
 	"sort"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
@@ -126,6 +127,22 @@ type groupTransformation struct {
 	keys []string
 }
 
+func (t *groupTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *groupTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *groupTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *groupTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *groupTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -188,6 +205,6 @@ func (t *groupTransformation) UpdateWatermark(id execute.DatasetID, mark execute
 func (t *groupTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *groupTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *groupTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

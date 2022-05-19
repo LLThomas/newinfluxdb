@@ -2,6 +2,7 @@ package aggregate
 
 import (
 	"context"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -186,6 +187,22 @@ type tableTransformation struct {
 	whichPipeThread int
 }
 
+func (t *tableTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *tableTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *tableTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *tableTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *tableTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -255,8 +272,8 @@ func (t *tableTransformation) UpdateProcessingTime(id execute.DatasetID, ts exec
 	return t.d.UpdateProcessingTime(ts)
 }
 
-func (t *tableTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *tableTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func (t *tableTransformation) validateInputTable(tbl flux.Table) error {

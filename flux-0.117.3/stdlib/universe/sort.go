@@ -10,6 +10,7 @@ import (
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
+	"sync"
 )
 
 const SortKind = "sort"
@@ -125,6 +126,22 @@ type sortTransformation struct {
 	desc bool
 }
 
+func (t *sortTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *sortTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *sortTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *sortTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *sortTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -176,8 +193,8 @@ func (t *sortTransformation) UpdateWatermark(id execute.DatasetID, mark execute.
 func (t *sortTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *sortTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *sortTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func (t *sortTransformation) sortedKey(key flux.GroupKey) flux.GroupKey {

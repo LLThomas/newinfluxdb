@@ -2,6 +2,7 @@ package universe
 
 import (
 	"context"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
@@ -106,6 +107,22 @@ type limitTransformation struct {
 	execute.ExecutionNode
 	d         *execute.PassthroughDataset
 	n, offset int
+}
+
+func (t *limitTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *limitTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *limitTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *limitTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *limitTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -238,6 +255,6 @@ func (t *limitTransformation) UpdateWatermark(id execute.DatasetID, mark execute
 func (t *limitTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *limitTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *limitTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

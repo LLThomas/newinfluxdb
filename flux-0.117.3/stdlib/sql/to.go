@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
@@ -144,6 +145,22 @@ type ToSQLTransformation struct {
 	tx    *sql.Tx
 }
 
+func (t *ToSQLTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *ToSQLTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *ToSQLTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *ToSQLTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *ToSQLTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -213,7 +230,7 @@ func (t *ToSQLTransformation) UpdateProcessingTime(id execute.DatasetID, pt exec
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *ToSQLTransformation) Finish(id execute.DatasetID, err error) {
+func (t *ToSQLTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
 	if supportsTx(t.spec.Spec.DriverName) {
 		var txErr error
 		if err == nil {
@@ -228,7 +245,7 @@ func (t *ToSQLTransformation) Finish(id execute.DatasetID, err error) {
 			err = errors.Wrap(err, codes.Inherit, dbErr)
 		}
 	}
-	t.d.Finish(err)
+	t.d.Finish(err, windowModel)
 }
 
 type translationFunc func(f flux.ColType, colname string) (string, error)

@@ -3,6 +3,7 @@ package universe
 import (
 	"math"
 	"sort"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
@@ -389,6 +390,22 @@ type ExactQuantileSelectorTransformation struct {
 	a     *memory.Allocator
 }
 
+func (t *ExactQuantileSelectorTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *ExactQuantileSelectorTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *ExactQuantileSelectorTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *ExactQuantileSelectorTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *ExactQuantileSelectorTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -653,6 +670,6 @@ func (t *ExactQuantileSelectorTransformation) UpdateProcessingTime(id execute.Da
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *ExactQuantileSelectorTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *ExactQuantileSelectorTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

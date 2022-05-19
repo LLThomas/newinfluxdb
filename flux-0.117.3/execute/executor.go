@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"log"
+	"os"
 	"reflect"
 	"runtime/debug"
 	"strings"
@@ -54,7 +55,7 @@ func (ctx streamContext) Bounds() *Bounds {
 	return ctx.bounds
 }
 
-type executionState struct {
+type ExecutionState struct {
 	p *plan.Spec
 
 	ctx    context.Context
@@ -72,7 +73,7 @@ type executionState struct {
 	dispatcher *poolDispatcher
 	logger     *zap.Logger
 
-	consecutiveTransportSet []*consecutiveTransport
+	consecutiveTransportSet []*ConsecutiveTransport
 
 	// set the number of pipeline to 6 which equals to the number of cores
 	// each pipeline has a set of pipe workers
@@ -85,6 +86,9 @@ type executionState struct {
 
 	// size of a block group
 	Len int
+
+	// for ResOperator
+	resOperator *Transformation
 }
 
 func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocator) (map[string]flux.Result, <-chan metadata.Metadata, error) {
@@ -93,16 +97,32 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 		return nil, nil, errors.Wrap(err, codes.Inherit, "failed to initialize execute state")
 	}
 
+	// init WindowModel ctx value
+	es.ctx = context.WithValue(es.ctx, "WindowModel", false)
+
+	// init road map
+	OperatorIndex := make(map[string]int)
+	OperatorMap := make(map[string]string)
+	var ExecutionState *ExecutionState
+	if es.resOperator == nil {
+		log.Println("hahah")
+		os.Exit(0)
+	}
+
 	// set execution model
 	// If the first operator is window() (except filter()), set WindowModel true.
 	if len(es.consecutiveTransportSet) > 0 && strings.Contains(es.consecutiveTransportSet[0].t.Label(), "window") {
-		WindowModel = true
+		es.ctx = context.WithValue(es.ctx, "WindowModel", true)
+		//WindowModel = true
 		log.Println("number of pipeline: ", len(es.ESmultiThreadPipeLine))
 		log.Println("number of operator in each pipeline: ", len(es.ESmultiThreadPipeLine[0].Worker))
 		// construct global operators line
 		n := len(es.consecutiveTransportSet)
 		for i := 0; i < n; i++ {
+			//es.consecutiveTransportSet[i].ctx =
+			//	context.WithValue(es.consecutiveTransportSet[i].ctx, "WindowModel", true)
 			e := es.consecutiveTransportSet[i]
+
 			OperatorIndex[e.Label()] = i
 			log.Println("OperatorIndex: ", i, e.Label())
 			if i+1 < n {
@@ -118,12 +138,28 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 			es.ESmultiThreadPipeLine[i].startPipeLine(ctx)
 		}
 
-		// for put series key into executionState.multiPipeLine, set es to global ExecutionState in multi_thread_pipe.go
-		// TODO: this is a bad idea, find elegant approach to solve it
+		// init source ctx WindowModel
+		//es.sources[0].ChangeCtx(es.ctx.Value("WindowModel"))
+
+		//// for put series key into ExecutionState.multiPipeLine, set es to global ExecutionState in multi_thread_pipe.go
+		//// TODO: this is a bad idea, find elegant approach to solve it
 		ExecutionState = es
-	} else {
-		WindowModel = false
+
+		es.ctx = context.WithValue(es.ctx, "ESmultiThreadPipeLine", es.ESmultiThreadPipeLine)
+
 	}
+	//else {
+	//	WindowModel = false
+	//}
+
+	// Set road for every Transformation.
+	for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
+		for j := 0; j < len(es.ESmultiThreadPipeLine[i].Worker); j++ {
+			es.ESmultiThreadPipeLine[i].Worker[j].t.SetRoad(OperatorIndex, OperatorMap, es.resOperator, ExecutionState)
+		}
+	}
+
+	// log.Println("Execute: (WindowModel) ", es.ctx.Value("WindowModel"))
 
 	// If WindowModel is false, use original execution model.
 	es.do()
@@ -137,13 +173,13 @@ func validatePlan(p *plan.Spec) error {
 	return nil
 }
 
-func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *memory.Allocator) (*executionState, error) {
+func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *memory.Allocator) (*ExecutionState, error) {
 	if err := validatePlan(p); err != nil {
 		return nil, errors.Wrap(err, codes.Invalid, "invalid plan")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	es := &executionState{
+	es := &ExecutionState{
 		p:         p,
 		ctx:       ctx,
 		cancel:    cancel,
@@ -154,16 +190,20 @@ func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *me
 		dispatcher:            newPoolDispatcher(10, e.logger),
 		logger:                e.logger,
 		// assume that number of thread is equal to the number of cores
-		ESmultiThreadPipeLine: make([]*MultiThreadPipeLine, 2),
+		ESmultiThreadPipeLine: make([]*MultiThreadPipeLine, 3),
 		// in case of sending duplicate finishMsg to finish operator, we count the finishMsg
 		// if numFinishMsgCount equals to the number of pipeline thread, we send a realy finish msg to finish operator
 		numFinishMsgCount: 0,
 		// assume that the size of block group is 3
-		Len: 1,
+		Len: 4,
+		resOperator: new(Transformation),
 	}
 
+	// for DispatchAndSend()
+	es.ctx = context.WithValue(es.ctx, "BlockGroupLen", es.Len)
+
 	for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
-		es.ESmultiThreadPipeLine[i] = newMultiPipeLine(make([]cursors.Cursor, 0), make([]cursors.Cursor, 0), make([]*consecutiveTransport, 0))
+		es.ESmultiThreadPipeLine[i] = newMultiPipeLine(make([]cursors.Cursor, 0), make([]cursors.Cursor, 0), make([]*ConsecutiveTransport, 0))
 	}
 
 	v := &createExecutionNodeVisitor{
@@ -186,7 +226,7 @@ func (e *executor) createExecutionState(ctx context.Context, p *plan.Spec, a *me
 // createExecutionNodeVisitor visits each node in a physical query plan
 // and creates a node responsible for executing that physical operation.
 type createExecutionNodeVisitor struct {
-	es    *executionState
+	es    *ExecutionState
 	nodes map[plan.Node]Node
 }
 
@@ -227,7 +267,8 @@ func (v *createExecutionNodeVisitor) Visit(node plan.Node) error {
 		v.es.results[yieldSpec.YieldName()] = r
 		v.nodes[skipYields(node)].AddTransformation(r)
 
-		ResOperator = r
+		(*v.es.resOperator) = r
+		//ResOperator = r
 
 		return nil
 	}
@@ -342,14 +383,14 @@ func (v *createExecutionNodeVisitor) Visit(node plan.Node) error {
 	return nil
 }
 
-func (es *executionState) abort(err error) {
+func (es *ExecutionState) abort(err error) {
 	for _, r := range es.results {
 		r.(*result).abort(err)
 	}
 	es.cancel()
 }
 
-func (es *executionState) do() {
+func (es *ExecutionState) do() {
 	var wg sync.WaitGroup
 	for _, src := range es.sources {
 		wg.Add(1)
@@ -392,13 +433,16 @@ func (es *executionState) do() {
 	}
 
 	wg.Add(1)
-	if !WindowModel {
+	if es.ctx.Value("WindowModel") == nil {
+		log.Println("do: (WindowModel) is nil!!")
+	}
+	if !es.ctx.Value("WindowModel").(bool) {
 		es.dispatcher.Start(es.resources.ConcurrencyQuota, es.ctx)
 	}
 	go func() {
 		defer wg.Done()
 
-		if !WindowModel {
+		if !es.ctx.Value("WindowModel").(bool) {
 			// Wait for all transports to finish
 			for _, t := range es.transports {
 				select {
@@ -434,7 +478,7 @@ func (es *executionState) do() {
 					}
 				}
 				// stop pipe worker
-				StopAllOperatorThread(i)
+				StopAllOperatorThread(i, es.ctx)
 			}
 		}
 	}()
@@ -447,7 +491,7 @@ func (es *executionState) do() {
 
 // Need a unique stream context per execution context
 type executionContext struct {
-	es            *executionState
+	es            *ExecutionState
 	parents       []DatasetID
 	streamContext streamContext
 }

@@ -409,4 +409,4 @@ func (n *noopTransformation) UpdateWatermark(id execute.DatasetID, t execute.Tim
 func (n *noopTransformation) UpdateProcessingTime(id execute.DatasetID, t execute.Time) error {
 	return nil
 }
-func (n *noopTransformation) Finish(id execute.DatasetID, err error) {}
+func (n *noopTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {}

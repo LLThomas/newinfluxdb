@@ -8,6 +8,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/values"
+	"sync"
 )
 
 const RangeKind = "range"
@@ -160,6 +161,22 @@ type rangeTransformation struct {
 	timeCol  string
 	startCol string
 	stopCol  string
+}
+
+func (t *rangeTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *rangeTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *rangeTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *rangeTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *rangeTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -347,6 +364,6 @@ func (t *rangeTransformation) UpdateProcessingTime(id execute.DatasetID, pt exec
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *rangeTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *rangeTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"context"
 	"sort"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -22,6 +23,22 @@ type sortTransformation2 struct {
 	mem     memory.Allocator
 	cols    []string
 	compare arrowutil.CompareFunc
+}
+
+func (s *sortTransformation2) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (s *sortTransformation2) GetRoad(s2 string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (s *sortTransformation2) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (s *sortTransformation2) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (s *sortTransformation2) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -158,8 +175,8 @@ func (s *sortTransformation2) UpdateWatermark(id execute.DatasetID, t execute.Ti
 func (s *sortTransformation2) UpdateProcessingTime(id execute.DatasetID, t execute.Time) error {
 	return s.d.UpdateProcessingTime(t)
 }
-func (s *sortTransformation2) Finish(id execute.DatasetID, err error) {
-	s.d.Finish(err)
+func (s *sortTransformation2) Finish(id execute.DatasetID, err error, windowModel bool) {
+	s.d.Finish(err, windowModel)
 }
 
 type sortTableMergeHeapItem struct {

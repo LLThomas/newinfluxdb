@@ -17,6 +17,7 @@ import (
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
 	"github.com/influxdata/influxdb/v2/tsdb/cursors"
+	"sync"
 )
 
 const RenameKind = "rename"
@@ -426,6 +427,36 @@ type schemaMutationTransformation struct {
 	mutators []SchemaMutator
 
 	whichPipeThread int
+	OperatorIndex 	map[string]int
+	OperatorMap 	map[string]string
+	ResOperator		*execute.Transformation
+	ExecutionState 	*execute.ExecutionState
+}
+
+func (t *schemaMutationTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	t.OperatorIndex = m
+	t.OperatorMap = m2
+	t.ResOperator = transformation
+	t.ExecutionState = state
+}
+
+func (t *schemaMutationTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	nextOperatorString := ""
+	if t.OperatorMap[s] != "" {
+		nextOperatorString = t.OperatorMap[s]
+	}
+	if nextOperatorString == "" {
+		return nil, t.ResOperator
+	}
+	return t.ExecutionState.ESmultiThreadPipeLine[i].Worker[t.OperatorIndex[nextOperatorString]], t.ResOperator
+}
+
+func (t *schemaMutationTransformation) GetEs() *execute.ExecutionState {
+	return t.ExecutionState
+}
+
+func (t *schemaMutationTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func createSchemaMutationTransformation(id execute.DatasetID, mode execute.AccumulationMode, spec plan.ProcedureSpec, a execute.Administration, whichPipeThread int) (execute.Transformation, execute.Dataset, error) {
@@ -462,8 +493,9 @@ func NewSchemaMutationTransformation(ctx context.Context, spec *SchemaMutationPr
 
 func (t *schemaMutationTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 
-	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
-	resOperator := execute.ResOperator
+	//nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	//resOperator := execute.ResOperator
+	nextOperator, resOperator := t.GetRoad(t.Label(), t.whichPipeThread)
 
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
@@ -492,7 +524,7 @@ func (t *schemaMutationTransformation) ProcessTbl(id execute.DatasetID, tbls []f
 	// send table to next operator
 	if tables != nil {
 		if nextOperator == nil {
-			resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+			(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
 		} else {
 			nextOperator.PushToChannel(tables)
 		}
@@ -551,8 +583,8 @@ func (t *schemaMutationTransformation) UpdateProcessingTime(id execute.DatasetID
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *schemaMutationTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *schemaMutationTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 type mutateTable struct {

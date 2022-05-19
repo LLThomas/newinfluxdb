@@ -10,6 +10,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/values"
+	"sync"
 )
 
 const MovingAverageKind = "movingAverage"
@@ -107,6 +108,22 @@ type movingAverageTransformation struct {
 	periodReached []bool
 	lastVal       []interface{}
 	notEmpty      []bool
+}
+
+func (t *movingAverageTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *movingAverageTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *movingAverageTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *movingAverageTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *movingAverageTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -239,8 +256,8 @@ func (t *movingAverageTransformation) UpdateProcessingTime(id execute.DatasetID,
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *movingAverageTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *movingAverageTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func (t *movingAverageTransformation) passThrough(vs *moving_average.ArrayContainer, b execute.TableBuilder, bj int) error {

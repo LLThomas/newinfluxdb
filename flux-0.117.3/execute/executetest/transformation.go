@@ -214,7 +214,7 @@ func (d *DataStore) UpdateProcessingTime(id execute.DatasetID, t execute.Time) e
 	return nil
 }
 
-func (d *DataStore) Finish(id execute.DatasetID, err error) {
+func (d *DataStore) Finish(id execute.DatasetID, err error, windowModel bool) {
 	if err != nil {
 		d.err = err
 	}
@@ -338,7 +338,7 @@ func (d devNullStore) Process(id execute.DatasetID, tbl flux.Table) error {
 }
 func (d devNullStore) UpdateWatermark(id execute.DatasetID, t execute.Time) error      { return nil }
 func (d devNullStore) UpdateProcessingTime(id execute.DatasetID, t execute.Time) error { return nil }
-func (d devNullStore) Finish(id execute.DatasetID, err error)                          {}
+func (d devNullStore) Finish(id execute.DatasetID, err error, windowModel bool)                          {}
 
 // Some transformations need to take a URL e.g. sql.to, kafka.to
 // the URL/DSN supplied by the user need to be validated by a URLValidator{}

@@ -10,6 +10,7 @@ import (
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
+	"sync"
 )
 
 const pkgpath = "contrib/jsternberg/influxdb"
@@ -96,6 +97,22 @@ type maskTransformation struct {
 	whichPipeThread int
 }
 
+func (t *maskTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *maskTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *maskTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *maskTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *maskTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -130,6 +147,6 @@ func (t *maskTransformation) UpdateProcessingTime(id execute.DatasetID, ts execu
 	return t.d.UpdateProcessingTime(ts)
 }
 
-func (t *maskTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *maskTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

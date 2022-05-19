@@ -8,6 +8,7 @@ import (
 	"github.com/influxdata/flux/internal/moving_average"
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
+	"sync"
 )
 
 const ExponentialMovingAverageKind = "exponentialMovingAverage"
@@ -99,6 +100,22 @@ type exponentialMovingAverageTransformation struct {
 	ema *moving_average.ExponentialMovingAverage
 
 	n int64
+}
+
+func (t *exponentialMovingAverageTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *exponentialMovingAverageTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *exponentialMovingAverageTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *exponentialMovingAverageTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *exponentialMovingAverageTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -206,6 +223,6 @@ func (t *exponentialMovingAverageTransformation) UpdateProcessingTime(id execute
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *exponentialMovingAverageTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *exponentialMovingAverageTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
+	"sync"
 )
 
 const ChandeMomentumOscillatorKind = "chandeMomentumOscillator"
@@ -118,6 +119,22 @@ type chandeMomentumOscillatorTransformation struct {
 
 	n       int64
 	columns []string
+}
+
+func (t *chandeMomentumOscillatorTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *chandeMomentumOscillatorTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *chandeMomentumOscillatorTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *chandeMomentumOscillatorTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *chandeMomentumOscillatorTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -295,6 +312,6 @@ func (t *chandeMomentumOscillatorTransformation) UpdateProcessingTime(id execute
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *chandeMomentumOscillatorTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *chandeMomentumOscillatorTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

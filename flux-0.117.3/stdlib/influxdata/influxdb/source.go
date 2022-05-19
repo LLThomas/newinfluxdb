@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -66,7 +67,12 @@ func (s *source) AddTransformation(t execute.Transformation) {
 
 func (s *source) Run(ctx context.Context) {
 	err := s.run(ctx)
-	s.ts.Finish(s.id, err)
+
+	if ctx.Value("WindowModel") == nil {
+		log.Println("source.go is nil!!")
+	}
+
+	s.ts.Finish(s.id, err, ctx.Value("WindowModel").(bool))
 }
 
 func (s *source) run(ctx context.Context) error {

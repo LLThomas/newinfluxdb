@@ -2,6 +2,7 @@ package universe
 
 import (
 	"math"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
@@ -131,6 +132,22 @@ type CovarianceTransformation struct {
 	xm2,
 	ym2,
 	xym2 float64
+}
+
+func (t *CovarianceTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *CovarianceTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *CovarianceTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *CovarianceTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *CovarianceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -267,6 +284,6 @@ func (t *CovarianceTransformation) UpdateProcessingTime(id execute.DatasetID, pt
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *CovarianceTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *CovarianceTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

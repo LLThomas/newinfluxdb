@@ -7,6 +7,7 @@ import (
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
+	"sync"
 )
 
 const AssertEmptyKind = "assertEmpty"
@@ -65,6 +66,22 @@ type AssertEmptyTransformation struct {
 	cache execute.TableBuilderCache
 }
 
+func (t *AssertEmptyTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *AssertEmptyTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *AssertEmptyTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *AssertEmptyTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *AssertEmptyTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -113,9 +130,9 @@ func (t *AssertEmptyTransformation) UpdateProcessingTime(id execute.DatasetID, m
 	return t.d.UpdateProcessingTime(mark)
 }
 
-func (t *AssertEmptyTransformation) Finish(id execute.DatasetID, err error) {
+func (t *AssertEmptyTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
 	if err == nil && t.failures > 0 {
 		err = errors.Newf(codes.Aborted, "found %d tables that were not empty", t.failures)
 	}
-	t.d.Finish(err)
+	t.d.Finish(err, windowModel)
 }

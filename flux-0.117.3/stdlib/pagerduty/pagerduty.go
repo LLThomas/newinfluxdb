@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/execute"
@@ -68,6 +69,22 @@ type DedupKeyTransformation struct {
 	execute.ExecutionNode
 	d     execute.Dataset
 	cache execute.TableBuilderCache
+}
+
+func (t *DedupKeyTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *DedupKeyTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *DedupKeyTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *DedupKeyTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *DedupKeyTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -197,6 +214,6 @@ func (t *DedupKeyTransformation) UpdateProcessingTime(id execute.DatasetID, mark
 	return t.d.UpdateProcessingTime(mark)
 }
 
-func (t *DedupKeyTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *DedupKeyTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -270,6 +271,22 @@ type ToTransformation struct {
 	buf                *storage.BufferedPointsWriter
 }
 
+func (t *ToTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *ToTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *ToTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *ToTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *ToTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -457,11 +474,11 @@ func (t *ToTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute
 }
 
 // Finish is called after the `to` flux function's transformation is done processing.
-func (t *ToTransformation) Finish(id execute.DatasetID, err error) {
+func (t *ToTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
 	if err == nil {
 		err = t.buf.Flush(t.Ctx)
 	}
-	t.d.Finish(err)
+	t.d.Finish(err, windowModel)
 }
 
 // ToDependencies contains the dependencies for executing the `to` function.

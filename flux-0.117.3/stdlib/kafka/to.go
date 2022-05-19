@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/url"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/cespare/xxhash/v2"
@@ -223,6 +224,22 @@ type ToKafkaTransformation struct {
 	d     execute.Dataset
 	cache execute.TableBuilderCache
 	spec  *ToKafkaProcedureSpec
+}
+
+func (t *ToKafkaTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *ToKafkaTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *ToKafkaTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *ToKafkaTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *ToKafkaTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -443,6 +460,6 @@ func (t *ToKafkaTransformation) UpdateProcessingTime(id execute.DatasetID, pt ex
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *ToKafkaTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *ToKafkaTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

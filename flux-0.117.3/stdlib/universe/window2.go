@@ -3,6 +3,7 @@ package universe
 import (
 	"context"
 	"sort"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -30,6 +31,22 @@ type windowTransformation2 struct {
 	mem         memory.Allocator
 
 	timeCol, startCol, stopCol string
+}
+
+func (w *windowTransformation2) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (w *windowTransformation2) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (w *windowTransformation2) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (w *windowTransformation2) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (w *windowTransformation2) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -412,8 +429,8 @@ func (w *windowTransformation2) getWindowSpan(ts, indexes *array.Int64, bound ex
 	return offset, stop
 }
 
-func (w *windowTransformation2) Finish(id execute.DatasetID, err error) {
-	w.d.Finish(err)
+func (w *windowTransformation2) Finish(id execute.DatasetID, err error, windowModel bool) {
+	w.d.Finish(err, windowModel)
 }
 
 func (w *windowTransformation2) RetractTable(id execute.DatasetID, key flux.GroupKey) error {

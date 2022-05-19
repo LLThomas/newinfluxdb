@@ -2,41 +2,39 @@ package execute
 
 import (
 	"context"
-	"github.com/influxdata/influxdb/v2/tsdb"
 	"github.com/influxdata/influxdb/v2/tsdb/cursors"
 	"log"
-	"sync"
 )
 
 // global window model
-var WindowModel bool
+//var WindowModel bool
 
 // global wg (for done in reader.go:239)
-var WG sync.WaitGroup
+//var WG sync.WaitGroup
 
-// global executionState
-var ExecutionState *executionState
+// global ExecutionState
+//var ExecutionState *ExecutionState
 
 // global ctx for tsdb.CreateCursorIterators()
-var MyCTX context.Context
+//var MyCTX context.Context
 // global shard info for above
-var MyShards []*tsdb.Shard
+//var MyShards []*tsdb.Shard
 
 // global transformation operators line
-var OperatorIndex map[string]int = make(map[string]int)
-var OperatorMap map[string]string = make(map[string]string)
-var ResOperator Transformation
+//var OperatorIndex map[string]int = make(map[string]int)
+//var OperatorMap map[string]string = make(map[string]string)
+//var ResOperator Transformation
 
-func FindNextOperator(currentOperator string, whichPipeThread int) *consecutiveTransport {
-	nextOperatorString := ""
-	if OperatorMap[currentOperator] != "" {
-		nextOperatorString = OperatorMap[currentOperator]
-	}
-	if nextOperatorString == "" {
-		return nil
-	}
-	return ExecutionState.ESmultiThreadPipeLine[whichPipeThread].Worker[OperatorIndex[nextOperatorString]]
-}
+//func FindNextOperator(currentOperator string, whichPipeThread int) *ConsecutiveTransport {
+//	nextOperatorString := ""
+//	if OperatorMap[currentOperator] != "" {
+//		nextOperatorString = OperatorMap[currentOperator]
+//	}
+//	if nextOperatorString == "" {
+//		return nil
+//	}
+//	return ExecutionState.ESmultiThreadPipeLine[whichPipeThread].Worker[OperatorIndex[nextOperatorString]]
+//}
 
 type MultiThreadPipeLine struct {
 	// series key
@@ -44,10 +42,10 @@ type MultiThreadPipeLine struct {
 	Current []cursors.Cursor
 
 	// worker in this pipeline
-	Worker []*consecutiveTransport
+	Worker []*ConsecutiveTransport
 }
 
-func newMultiPipeLine(dataSource []cursors.Cursor, current []cursors.Cursor, worker []*consecutiveTransport) *MultiThreadPipeLine {
+func newMultiPipeLine(dataSource []cursors.Cursor, current []cursors.Cursor, worker []*ConsecutiveTransport) *MultiThreadPipeLine {
 	mpl := &MultiThreadPipeLine{
 		DataSource: dataSource,
 		Current: current,
@@ -64,8 +62,8 @@ func (mpl *MultiThreadPipeLine) startPipeLine(ctx context.Context)  {
 	}
 }
 
-func StopAllOperatorThread(whichOperator int) error {
-	mpl := ExecutionState.ESmultiThreadPipeLine
+func StopAllOperatorThread(whichOperator int, ctx context.Context) error {
+	mpl := ctx.Value("ESmultiThreadPipeLine").([]*MultiThreadPipeLine)
 	for i := 0; i < len(mpl); i++ {
 		log.Println("stop operator: ", mpl[i].Worker[whichOperator].Label(), " in ", i)
 		if  err := mpl[i].Worker[whichOperator].worker.Stop(); err != nil {
@@ -76,14 +74,15 @@ func StopAllOperatorThread(whichOperator int) error {
 }
 
 // split series key for each pipeline
-func SplitSeriesKey(allSeriesKey []cursors.Cursor) map[cursors.Cursor]int {
+func SplitSeriesKey(allSeriesKey []cursors.Cursor, ctx context.Context) map[cursors.Cursor]int {
 
 	pipeToGroupKey := make(map[cursors.Cursor]int)
 	for i := 0; i < len(allSeriesKey); i++ {
 		pipeToGroupKey[allSeriesKey[i]] = i
 	}
 
-	mpl := ExecutionState.ESmultiThreadPipeLine
+	//mpl := ExecutionState.ESmultiThreadPipeLine
+	mpl := ctx.Value("ESmultiThreadPipeLine").([]*MultiThreadPipeLine)
 	n := len(allSeriesKey)
 	split := 1
 	if n >= 2*len(mpl) {
@@ -105,9 +104,11 @@ func SplitSeriesKey(allSeriesKey []cursors.Cursor) map[cursors.Cursor]int {
 }
 
 // dispatch datasource to current and send to first operator
-func DispatchAndSend(ff func(whichPipeThread int))  {
-	mpl := ExecutionState.ESmultiThreadPipeLine
-	l := ExecutionState.Len
+func DispatchAndSend(ff func(whichPipeThread int), ctx context.Context)  {
+	//mpl := ExecutionState.ESmultiThreadPipeLine
+	mpl := ctx.Value("ESmultiThreadPipeLine").([]*MultiThreadPipeLine)
+	//l := ExecutionState.Len
+	l := ctx.Value("BlockGroupLen").(int)
 	for i := 0; i < len(mpl); i++ {
 		for len(mpl[i].DataSource) > 0 {
 			// set the size of current to 3 (executor.go:139 make([]cursors.Cursor, 3))

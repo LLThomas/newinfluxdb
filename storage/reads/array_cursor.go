@@ -3,7 +3,6 @@ package reads
 import (
 	"context"
 	"fmt"
-	"github.com/influxdata/flux/execute"
 	"github.com/influxdata/flux/interval"
 	"github.com/influxdata/influxdb/v2/storage/reads/datatypes"
 	"github.com/influxdata/influxdb/v2/tsdb"
@@ -112,8 +111,15 @@ func (m *multiShardArrayCursors) createCursor(row SeriesRow) cursors.Cursor {
 	// *********************************************************************************************************************************
 	// every time createCursor is called, row.Query should be recreated in case of the situation only the last series key can access the raw data
 	// *********************************************************************************************************************************
+	if m.ctx.Value("MyCTX") == nil || m.ctx.Value("MyShards") == nil {
+		log.Println("array_cursor.go is nil!!")
+	}
 	var err error
-	if row.Query, err = tsdb.CreateCursorIterators(execute.MyCTX, execute.MyShards); err != nil {
+	//if row.Query, err = tsdb.CreateCursorIterators(execute.MyCTX, execute.MyShards); err != nil {
+	//	log.Println("tsdb.CreateCursorIterators error: ", err)
+	//	os.Exit(0)
+	//}
+	if row.Query, err = tsdb.CreateCursorIterators(m.ctx.Value("MyCTX").(context.Context), m.ctx.Value("MyShards").([]*tsdb.Shard)); err != nil {
 		log.Println("tsdb.CreateCursorIterators error: ", err)
 		os.Exit(0)
 	}

@@ -17,7 +17,7 @@ type Dataset interface {
 	RetractTable(key flux.GroupKey) error
 	UpdateProcessingTime(t Time) error
 	UpdateWatermark(mark Time) error
-	Finish(error)
+	Finish(error, bool)
 
 	SetTriggerSpec(t plan.TriggerSpec)
 
@@ -194,7 +194,7 @@ func (d *dataset) RetractTable(key flux.GroupKey) error {
 	return d.ts.RetractTable(d.id, key)
 }
 
-func (d *dataset) Finish(err error) {
+func (d *dataset) Finish(err error, windowModel bool) {
 	if err == nil {
 		// Only trigger tables we if we not finishing because of an error.
 		d.cache.ForEach(func(bk flux.GroupKey) {
@@ -210,7 +210,7 @@ func (d *dataset) Finish(err error) {
 			d.cache.ExpireTable(bk)
 		})
 	}
-	d.ts.Finish(d.id, err)
+	d.ts.Finish(d.id, err, windowModel)
 }
 
 // PassthroughDataset is a Dataset that will passthrough
@@ -249,8 +249,8 @@ func (d *PassthroughDataset) UpdateWatermark(mark Time) error {
 	return d.ts.UpdateWatermark(d.id, mark)
 }
 
-func (d *PassthroughDataset) Finish(err error) {
-	d.ts.Finish(d.id, err)
+func (d *PassthroughDataset) Finish(err error, windowModel bool) {
+	d.ts.Finish(d.id, err, windowModel)
 }
 
 func (d *PassthroughDataset) SetTriggerSpec(t plan.TriggerSpec) {

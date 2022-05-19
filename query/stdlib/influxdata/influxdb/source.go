@@ -3,6 +3,7 @@ package influxdb
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -56,15 +57,23 @@ func (s *Source) Run(ctx context.Context) {
 		err = s.runner.run(ctx)
 	}
 	s.m.recordMetrics(labelValues, start)
-	if !execute.WindowModel {
+
+	if ctx.Value("WindowModel") == nil {
+		log.Println("Run: (WindowModel) is nil!!!")
+	}
+
+	if !ctx.Value("WindowModel").(bool) {
 		for _, t := range s.ts {
-			t.Finish(s.id, err)
+			t.Finish(s.id, err, ctx.Value("WindowModel").(bool))
 		}
 	} else {
 		// send nil table to all first operator in each pipeline thread, so they can go to transport.go:319
-		mpl := execute.ExecutionState.ESmultiThreadPipeLine
+		//mpl := execute.ExecutionState.ESmultiThreadPipeLine
+
+		mpl := ctx.Value("ESmultiThreadPipeLine").([]*execute.MultiThreadPipeLine)
+
 		for i := 0; i < len(mpl); i++ {
-			mpl[i].Worker[0].Finish(s.id, err)
+			mpl[i].Worker[0].Finish(s.id, err, ctx.Value("WindowModel").(bool))
 		}
 	}
 }
@@ -93,7 +102,11 @@ func (s *Source) processTables(ctx context.Context, tables query.TableIterator, 
 	s.stats.ScannedValues += stats.ScannedValues
 	s.stats.ScannedBytes += stats.ScannedBytes
 
-	if !execute.WindowModel {
+	if ctx.Value("WindowModel") == nil {
+		log.Println("processTables: (WindowModel) is nil !!")
+	}
+
+	if !ctx.Value("WindowModel").(bool) {
 		for _, t := range s.ts {
 			if err := t.UpdateWatermark(s.id, watermark); err != nil {
 				return err

@@ -5,6 +5,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/execute"
@@ -116,6 +117,22 @@ type histogramQuantileTransformation struct {
 	cache execute.TableBuilderCache
 
 	spec HistogramQuantileProcedureSpec
+}
+
+func (t histogramQuantileTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t histogramQuantileTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t histogramQuantileTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t histogramQuantileTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t histogramQuantileTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -403,6 +420,6 @@ func (t histogramQuantileTransformation) UpdateProcessingTime(id execute.Dataset
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t histogramQuantileTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t histogramQuantileTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

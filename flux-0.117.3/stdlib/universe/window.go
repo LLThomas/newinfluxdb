@@ -11,6 +11,7 @@ import (
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/values"
 	"math"
+	"sync"
 )
 
 const WindowKind = "window"
@@ -230,6 +231,37 @@ type fixedWindowTransformation struct {
 	createEmpty bool
 
 	whichPipeThread int
+	WG *sync.WaitGroup
+	OperatorIndex 	map[string]int
+	OperatorMap 	map[string]string
+	ResOperator		*execute.Transformation
+	ExecutionState 	*execute.ExecutionState
+}
+
+func (t *fixedWindowTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	t.OperatorIndex = m
+	t.OperatorMap = m2
+	t.ResOperator = transformation
+	t.ExecutionState = state
+}
+
+func (t *fixedWindowTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	nextOperatorString := ""
+	if t.OperatorMap[s] != "" {
+		nextOperatorString = t.OperatorMap[s]
+	}
+	if nextOperatorString == "" {
+		return nil, t.ResOperator
+	}
+	return t.ExecutionState.ESmultiThreadPipeLine[i].Worker[t.OperatorIndex[nextOperatorString]], t.ResOperator
+}
+
+func (t *fixedWindowTransformation) GetEs() *execute.ExecutionState {
+	return t.ExecutionState
+}
+
+func (t *fixedWindowTransformation) SetWG(WG *sync.WaitGroup) {
+	t.WG = WG
 }
 
 func (t *fixedWindowTransformation) ClearCache() error {
@@ -371,10 +403,9 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 	numCount := make([]int, n)
 
 	// for send data
-	//nextOperator := execute.OperatorMap[t.Label()]
+	//nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
 	//resOperator := execute.ResOperator
-	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
-	resOperator := execute.ResOperator
+	nextOperator, resOperator := t.GetRoad(t.Label(), t.whichPipeThread)
 
 	// for bounds stop data
 	concernBoundsStop := false
@@ -505,7 +536,7 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 					// send table to next operator
 					if tables != nil {
 						if nextOperator == nil{
-							resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+							(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
 						} else {
 							nextOperator.PushToChannel(tables)
 						}
@@ -598,7 +629,7 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 		// send table group to next operator
 		if len(tables) > 0 && tables != nil {
 			if nextOperator == nil {
-				resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+				(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
 			} else {
 				nextOperator.PushToChannel(tables)
 			}
@@ -621,7 +652,8 @@ func (t *fixedWindowTransformation) ProcessTbl(id execute.DatasetID, tbls []flux
 
 	// if all block group done, call WG.Done (for reader.go:271)
 	for i := 0; i < n; i++ {
-		execute.WG.Done()
+		//execute.WG.Done()
+		t.WG.Done()
 	}
 	return nil
 }
@@ -1030,8 +1062,8 @@ func (t *fixedWindowTransformation) UpdateWatermark(id execute.DatasetID, mark e
 func (t *fixedWindowTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *fixedWindowTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *fixedWindowTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 // WindowTriggerPhysicalRule rewrites a physical window operation

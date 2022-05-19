@@ -9,6 +9,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"log"
 	"os"
+	"sync"
 )
 
 type aggregateTransformation struct {
@@ -20,6 +21,37 @@ type aggregateTransformation struct {
 	config AggregateConfig
 
 	whichPipeThread int
+	WG *sync.WaitGroup
+	OperatorIndex 	map[string]int
+	OperatorMap 	map[string]string
+	ResOperator		*Transformation
+	ExecutionState 	*ExecutionState
+}
+
+func (t *aggregateTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *Transformation, state *ExecutionState) {
+	t.OperatorIndex = m
+	t.OperatorMap = m2
+	t.ResOperator = transformation
+	t.ExecutionState = state
+}
+
+func (t *aggregateTransformation) GetRoad(label string, thread int) (*ConsecutiveTransport, *Transformation) {
+	nextOperatorString := ""
+	if t.OperatorMap[label] != "" {
+		nextOperatorString = t.OperatorMap[label]
+	}
+	if nextOperatorString == "" {
+		return nil, t.ResOperator
+	}
+	return t.ExecutionState.ESmultiThreadPipeLine[thread].Worker[t.OperatorIndex[nextOperatorString]], t.ResOperator
+}
+
+func (t *aggregateTransformation) GetEs() *ExecutionState {
+	return t.ExecutionState
+}
+
+func (t *aggregateTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *aggregateTransformation) ClearCache() error {
@@ -83,8 +115,9 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 	//	log.Println(tbls[k].Key())
 	//}
 
-	nextOperator := FindNextOperator(t.Label(), t.whichPipeThread)
-	resOperator := ResOperator
+	//nextOperator := FindNextOperator(t.Label(), t.whichPipeThread)
+	//resOperator := ResOperator
+	nextOperator, resOperator := t.GetRoad(t.Label(), t.whichPipeThread)
 
 	var tables []flux.Table
 	for i := 0; i < len(tbls); i++ {
@@ -250,7 +283,7 @@ func (t *aggregateTransformation) ProcessTbl(id DatasetID, tbls []flux.Table) er
 	// in transport.go.
 	if tables != nil {
 		if nextOperator == nil {
-			resOperator.ProcessTbl(DatasetID{0}, tables)
+			(*resOperator).ProcessTbl(DatasetID{0}, tables)
 		} else {
 			nextOperator.PushToChannel(tables)
 		}
@@ -402,8 +435,8 @@ func (t *aggregateTransformation) UpdateWatermark(id DatasetID, mark Time) error
 func (t *aggregateTransformation) UpdateProcessingTime(id DatasetID, pt Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *aggregateTransformation) Finish(id DatasetID, err error) {
-	t.d.Finish(err)
+func (t *aggregateTransformation) Finish(id DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 type Aggregate interface {

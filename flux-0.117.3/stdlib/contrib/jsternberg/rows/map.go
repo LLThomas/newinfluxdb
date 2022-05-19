@@ -2,6 +2,7 @@ package rows
 
 import (
 	"context"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/apache/arrow/go/arrow/memory"
@@ -100,6 +101,22 @@ type mapTransformation struct {
 	mem memory.Allocator
 
 	whichPipeThread int
+}
+
+func (t *mapTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *mapTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *mapTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *mapTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -206,8 +223,8 @@ func (t *mapTransformation) UpdateProcessingTime(id execute.DatasetID, ts execut
 	return t.d.UpdateProcessingTime(ts)
 }
 
-func (t *mapTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *mapTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 type mapTable struct {

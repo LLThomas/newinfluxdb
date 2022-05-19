@@ -3,6 +3,7 @@ package promql
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -116,8 +117,13 @@ func (s *EmptyTableSource) Run(ctx context.Context) {
 	}
 
 FINISH:
+
+	if ctx.Value("WindowModel") == nil {
+		log.Println("empty_table.go is nil!!")
+	}
+
 	for _, t := range s.ts {
 		err = errors.Wrap(err, "error in promql.emptyTable()")
-		t.Finish(s.id, err)
+		t.Finish(s.id, err, ctx.Value("WindowModel").(bool))
 	}
 }

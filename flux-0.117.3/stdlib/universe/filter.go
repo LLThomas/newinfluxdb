@@ -22,6 +22,7 @@ import (
 	"github.com/influxdata/flux/semantic"
 	"github.com/influxdata/flux/values"
 	"log"
+	"sync"
 )
 
 const FilterKind = "filter"
@@ -148,6 +149,36 @@ type filterTransformation struct {
 	alloc           *memory.Allocator
 
 	whichPipeThread int
+	OperatorIndex 	map[string]int
+	OperatorMap 	map[string]string
+	ResOperator		*execute.Transformation
+	ExecutionState 	*execute.ExecutionState
+}
+
+func (t *filterTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	t.OperatorIndex = m
+	t.OperatorMap = m2
+	t.ResOperator = transformation
+	t.ExecutionState = state
+}
+
+func (t *filterTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	nextOperatorString := ""
+	if t.OperatorMap[s] != "" {
+		nextOperatorString = t.OperatorMap[s]
+	}
+	if nextOperatorString == "" {
+		return nil, t.ResOperator
+	}
+	return t.ExecutionState.ESmultiThreadPipeLine[i].Worker[t.OperatorIndex[nextOperatorString]], t.ResOperator
+}
+
+func (t *filterTransformation) GetEs() *execute.ExecutionState {
+	return t.ExecutionState
+}
+
+func (t *filterTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *filterTransformation) ClearCache() error {
@@ -175,8 +206,9 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 
 	//log.Println("filter whichPipeThread: ", t.whichPipeThread)
 
-	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
-	resOperator := execute.ResOperator
+	//nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	//resOperator := execute.ResOperator
+	nextOperator, resOperator := t.GetRoad(t.Label(), t.whichPipeThread)
 
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
@@ -223,7 +255,7 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 	// send table to next operator
 	if tables != nil {
 		if nextOperator == nil {
-			resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+			(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
 		} else {
 			nextOperator.PushToChannel(tables)
 		}
@@ -310,8 +342,9 @@ func (t *filterTransformation) canFilterByKey(fn *execute.RowPredicatePreparedFn
 }
 
 func (t *filterTransformation) anotherFilterByKey(tbls []flux.Table) error {
-	nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
-	resOperator := execute.ResOperator
+	//nextOperator := execute.FindNextOperator(t.Label(), t.whichPipeThread)
+	//resOperator := execute.ResOperator
+	nextOperator, resOperator := t.GetRoad(t.Label(), t.whichPipeThread)
 
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
@@ -356,7 +389,7 @@ func (t *filterTransformation) anotherFilterByKey(tbls []flux.Table) error {
 
 	// send table to next operator
 	if nextOperator == nil {
-		resOperator.ProcessTbl(execute.DatasetID{0}, tables)
+		(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
 	} else {
 		nextOperator.PushToChannel(tables)
 	}
@@ -454,8 +487,8 @@ func (t *filterTransformation) UpdateWatermark(id execute.DatasetID, mark execut
 func (t *filterTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *filterTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *filterTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 // RemoveTrivialFilterRule removes Filter nodes whose predicate always evaluates to true.

@@ -5,6 +5,7 @@ package promql
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/execute"
@@ -109,6 +110,22 @@ type holtWintersTransformation struct {
 
 	smoothingFactor float64
 	trendFactor     float64
+}
+
+func (t *holtWintersTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *holtWintersTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *holtWintersTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *holtWintersTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *holtWintersTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -240,6 +257,6 @@ func (t *holtWintersTransformation) UpdateWatermark(id execute.DatasetID, mark e
 func (t *holtWintersTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *holtWintersTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *holtWintersTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

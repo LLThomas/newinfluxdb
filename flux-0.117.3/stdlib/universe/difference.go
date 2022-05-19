@@ -10,6 +10,7 @@ import (
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
 	"github.com/influxdata/flux/semantic"
+	"sync"
 )
 
 const DifferenceKind = "difference"
@@ -130,6 +131,22 @@ type differenceTransformation struct {
 	nonNegative bool
 	columns     []string
 	keepFirst   bool
+}
+
+func (t *differenceTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *differenceTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *differenceTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *differenceTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *differenceTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -321,8 +338,8 @@ func (t *differenceTransformation) UpdateWatermark(id execute.DatasetID, mark ex
 func (t *differenceTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *differenceTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *differenceTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }
 
 func newDifference(nonNegative bool) *difference {

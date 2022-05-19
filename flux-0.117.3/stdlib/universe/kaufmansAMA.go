@@ -2,6 +2,7 @@ package universe
 
 import (
 	"math"
+	"sync"
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/flux/codes"
@@ -110,6 +111,22 @@ type kamaTransformation struct {
 
 	n      int64
 	column string
+}
+
+func (t *kamaTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *kamaTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *kamaTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *kamaTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (t *kamaTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -303,6 +320,6 @@ func (t *kamaTransformation) UpdateProcessingTime(id execute.DatasetID, pt execu
 	return t.d.UpdateProcessingTime(pt)
 }
 
-func (t *kamaTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *kamaTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/influxdata/flux/internal/errors"
 	"github.com/influxdata/flux/plan"
 	"github.com/influxdata/flux/runtime"
+	"sync"
 )
 
 const KeysKind = "keys"
@@ -101,6 +102,22 @@ type keysTransformation struct {
 	column string
 }
 
+func (t *keysTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *keysTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *keysTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *keysTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *keysTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -167,6 +184,6 @@ func (t *keysTransformation) UpdateWatermark(id execute.DatasetID, mark execute.
 func (t *keysTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return t.d.UpdateProcessingTime(pt)
 }
-func (t *keysTransformation) Finish(id execute.DatasetID, err error) {
-	t.d.Finish(err)
+func (t *keysTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	t.d.Finish(err, windowModel)
 }

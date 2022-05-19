@@ -6,6 +6,7 @@ package socket
 import (
 	"context"
 	"io"
+	"log"
 	"net"
 	neturl "net/url"
 	"strings"
@@ -209,7 +210,11 @@ func (ss *socketSource) Run(ctx context.Context) {
 		})
 	}
 
+	if ctx.Value("WindowModel") == nil {
+		log.Println("from.go: is nil!!")
+	}
+
 	for _, t := range ss.ts {
-		t.Finish(ss.d, err)
+		t.Finish(ss.d, err, ctx.Value("WindowModel").(bool))
 	}
 }

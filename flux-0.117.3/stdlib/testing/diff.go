@@ -128,6 +128,22 @@ type DiffTransformation struct {
 	nansEqual bool
 }
 
+func (t *DiffTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *DiffTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *DiffTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *DiffTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *DiffTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -647,14 +663,14 @@ func (t *DiffTransformation) UpdateProcessingTime(id execute.DatasetID, mark exe
 	return t.d.UpdateProcessingTime(min)
 }
 
-func (t *DiffTransformation) Finish(id execute.DatasetID, err error) {
+func (t *DiffTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	t.parentState[id].finished = true
 
 	if err != nil {
-		t.d.Finish(err)
+		t.d.Finish(err, windowModel)
 	}
 
 	finished := true
@@ -679,6 +695,6 @@ func (t *DiffTransformation) Finish(id execute.DatasetID, err error) {
 			}
 			err = t.diff(key, want, got)
 		})
-		t.d.Finish(err)
+		t.d.Finish(err, windowModel)
 	}
 }

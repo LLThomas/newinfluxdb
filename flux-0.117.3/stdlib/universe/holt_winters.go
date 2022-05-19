@@ -2,6 +2,7 @@ package universe
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/apache/arrow/go/arrow/array"
 	"github.com/influxdata/flux"
@@ -149,6 +150,22 @@ type holtWintersTransformation struct {
 	n          int64
 	s          int64
 	interval   values.Duration
+}
+
+func (hwt *holtWintersTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (hwt *holtWintersTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (hwt *holtWintersTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (hwt *holtWintersTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
 }
 
 func (hwt *holtWintersTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
@@ -372,6 +389,6 @@ func (hwt *holtWintersTransformation) UpdateWatermark(id execute.DatasetID, mark
 func (hwt *holtWintersTransformation) UpdateProcessingTime(id execute.DatasetID, pt execute.Time) error {
 	return hwt.d.UpdateProcessingTime(pt)
 }
-func (hwt *holtWintersTransformation) Finish(id execute.DatasetID, err error) {
-	hwt.d.Finish(err)
+func (hwt *holtWintersTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
+	hwt.d.Finish(err, windowModel)
 }

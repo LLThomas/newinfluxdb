@@ -104,6 +104,22 @@ type AssertEqualsTransformation struct {
 	name string
 }
 
+func (t *AssertEqualsTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
+	panic("implement me")
+}
+
+func (t *AssertEqualsTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
+	panic("implement me")
+}
+
+func (t *AssertEqualsTransformation) GetEs() *execute.ExecutionState {
+	panic("implement me")
+}
+
+func (t *AssertEqualsTransformation) SetWG(WG *sync.WaitGroup) {
+	panic("implement me")
+}
+
 func (t *AssertEqualsTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
 	panic("implement me")
 }
@@ -247,7 +263,7 @@ func (t *AssertEqualsTransformation) UpdateProcessingTime(id execute.DatasetID, 
 	return t.d.UpdateProcessingTime(min)
 }
 
-func (t *AssertEqualsTransformation) Finish(id execute.DatasetID, err error) {
+func (t *AssertEqualsTransformation) Finish(id execute.DatasetID, err error, windowModel bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -256,7 +272,7 @@ func (t *AssertEqualsTransformation) Finish(id execute.DatasetID, err error) {
 	} else if t.wantParent.id == id {
 		t.wantParent.finished = true
 	} else {
-		t.d.Finish(errors.Newf(codes.Internal, "unexpected dataset id: %v", id))
+		t.d.Finish(errors.Newf(codes.Internal, "unexpected dataset id: %v", id), windowModel)
 	}
 
 	if err != nil {
@@ -273,6 +289,6 @@ func (t *AssertEqualsTransformation) Finish(id execute.DatasetID, err error) {
 				t.err = &AssertEqualsError{"assertEquals streams had unequal table counts"}
 			}
 		}
-		t.d.Finish(t.err)
+		t.d.Finish(t.err, windowModel)
 	}
 }

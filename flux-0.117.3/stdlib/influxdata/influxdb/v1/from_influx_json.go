@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 
@@ -191,7 +192,12 @@ func (c *JSONSource) Run(ctx context.Context) {
 	}
 
 FINISH:
+
+	if ctx.Value("WindowModel") == nil {
+		log.Println("from_influx_json.go is nil!!")
+	}
+
 	for _, t := range c.ts {
-		t.Finish(c.id, err)
+		t.Finish(c.id, err, ctx.Value("WindowModel").(bool))
 	}
 }
