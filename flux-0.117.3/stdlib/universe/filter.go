@@ -195,12 +195,12 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 	}
 
 	// Prepare the function for the column types.
-	cols := tbls[0].Cols()
-	fn, err := t.fn.Prepare(cols)
-	if err != nil {
-		// TODO(nathanielc): Should we not fail the query for failed compilation?
-		return err
-	}
+	//cols := tbls[0].Cols()
+	//fn, err := t.fn.Prepare(cols)
+	//if err != nil {
+	//	// TODO(nathanielc): Should we not fail the query for failed compilation?
+	//	return err
+	//}
 	
 	var tables []flux.Table
 	for k := 0; k < len(tbls); k++ {
@@ -208,25 +208,30 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 		// Retrieve the inferred input type for the function.
 		// If all of the inferred inputs are part of the group
 		// key, we can evaluate a record with only the group key.
-		if t.canFilterByKey(fn, tbls[0]) {
-			return t.anotherFilterByKey(tbls)
-		}
+		//if t.canFilterByKey(fn, tbls[0]) {
+		//	return t.anotherFilterByKey(tbls)
+		//}
 
 		// Prefill the columns that can be inferred from the group key.
 		// Retrieve the input type from the function and record the indices
 		// that need to be obtained from the columns.
-		record := values.NewObject(fn.InputType())
-		indices := make([]int, 0, len(tbls[k].Cols())-len(tbls[k].Key().Cols()))
-		for j, c := range tbls[k].Cols() {
-			if idx := execute.ColIdx(c.Label, tbls[k].Key().Cols()); idx >= 0 {
-				record.Set(c.Label, tbls[k].Key().Value(idx))
-				continue
-			}
-			indices = append(indices, j)
+		//record := values.NewObject(fn.InputType())
+
+		// fmt.Println(t.whichPipeThread, " len(tbls[k].Cols()): ", len(tbls[k].Cols()), " len(tbls[k].Key().Cols()): ", len(tbls[k].Key().Cols()))
+		if len(tbls[k].Cols()) == 0 {
+			continue
 		}
+		//indices := make([]int, 0, len(tbls[k].Cols())-len(tbls[k].Key().Cols()))
+		//for j, c := range tbls[k].Cols() {
+		//	if idx := execute.ColIdx(c.Label, tbls[k].Key().Cols()); idx >= 0 {
+		//		record.Set(c.Label, tbls[k].Key().Value(idx))
+		//		continue
+		//	}
+		//	indices = append(indices, j)
+		//}
 
 		// Filter the table and pass in the indices we have to read.
-		table, err := t.filterTable(fn, tbls[k], record, indices)
+		table, err := t.filterTable(nil, tbls[k], nil, nil)
 		if err != nil {
 			return err
 		}
