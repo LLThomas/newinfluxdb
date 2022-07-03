@@ -147,17 +147,16 @@ func (e *executor) Execute(ctx context.Context, p *plan.Spec, a *memory.Allocato
 
 		es.ctx = context.WithValue(es.ctx, "ESmultiThreadPipeLine", es.ESmultiThreadPipeLine)
 
+		// Set road for every Transformation.
+		for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
+			for j := 0; j < len(es.ESmultiThreadPipeLine[i].Worker); j++ {
+				es.ESmultiThreadPipeLine[i].Worker[j].t.SetRoad(OperatorIndex, OperatorMap, es.resOperator, ExecutionState)
+			}
+		}
 	}
 	//else {
 	//	WindowModel = false
 	//}
-
-	// Set road for every Transformation.
-	for i := 0; i < len(es.ESmultiThreadPipeLine); i++ {
-		for j := 0; j < len(es.ESmultiThreadPipeLine[i].Worker); j++ {
-			es.ESmultiThreadPipeLine[i].Worker[j].t.SetRoad(OperatorIndex, OperatorMap, es.resOperator, ExecutionState)
-		}
-	}
 
 	// log.Println("Execute: (WindowModel) ", es.ctx.Value("WindowModel"))
 

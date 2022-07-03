@@ -272,7 +272,7 @@ type ToTransformation struct {
 }
 
 func (t *ToTransformation) SetRoad(m map[string]int, m2 map[string]string, transformation *execute.Transformation, state *execute.ExecutionState) {
-	panic("implement me")
+	return
 }
 
 func (t *ToTransformation) GetRoad(s string, i int) (*execute.ConsecutiveTransport, *execute.Transformation) {
@@ -288,11 +288,48 @@ func (t *ToTransformation) SetWG(WG *sync.WaitGroup) {
 }
 
 func (t *ToTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) error {
-	panic("implement me")
+	if t.implicitTagColumns {
+
+		for _, tbl := range tbls {
+			if tbl == nil {
+				continue
+			}
+
+			// If no tag columns are specified, by default we exclude
+			// _field, _value and _measurement from being tag columns.
+			excludeColumns := map[string]bool{
+				execute.DefaultValueColLabel: true,
+				defaultFieldColLabel:         true,
+				DefaultMeasurementColLabel:   true,
+			}
+
+			// If a field function is specified then we exclude any column that
+			// is referenced in the function expression from being a tag column.
+			if t.spec.Spec.FieldFn.Fn != nil {
+				recordParam := t.spec.Spec.FieldFn.Fn.Parameters.List[0].Key.Name
+				exprNode := t.spec.Spec.FieldFn.Fn
+				colVisitor := newFieldFunctionVisitor(recordParam, tbl.Cols())
+
+				// Walk the field function expression and record which columns
+				// are referenced. None of these columns will be used as tag columns.
+				semantic.Walk(colVisitor, exprNode)
+				for k, v := range colVisitor.captured {
+					excludeColumns[k] = v
+				}
+			}
+
+			addTagsFromTable(t.spec.Spec, tbl, excludeColumns)
+
+			if err := writeTable(t.Ctx, t, tbl); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (t *ToTransformation) ClearCache() error {
-	panic("implement me")
+	return t.d.ClearCache()
 }
 
 // RetractTable retracts the table for the transformation for the `to` flux function.
