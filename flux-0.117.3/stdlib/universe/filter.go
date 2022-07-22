@@ -253,7 +253,7 @@ func (t *filterTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Tabl
 	}
 
 	// send table to next operator
-	if tables != nil {
+	if tables != nil && len(tables) > 0 {
 		if nextOperator == nil {
 			(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
 		} else {

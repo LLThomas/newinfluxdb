@@ -248,10 +248,12 @@ func (t *mapTransformation) ProcessTbl(id execute.DatasetID, tbls []flux.Table) 
 	}
 
 	// send table to next operator
-	if nextOperator == nil {
-		(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
-	} else {
-		nextOperator.PushToChannel(tables)
+	if tables != nil && len(tables) > 0 {
+		if nextOperator == nil {
+			(*resOperator).ProcessTbl(execute.DatasetID{0}, tables)
+		} else {
+			nextOperator.PushToChannel(tables)
+		}
 	}
 
 	return nil
